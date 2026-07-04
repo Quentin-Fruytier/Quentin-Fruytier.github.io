@@ -1,0 +1,29 @@
+---
+layout: default
+title: Blog
+nav_active: blog
+permalink: /blog/
+---
+<div class="content-wrap">
+  <p><heading>Blog</heading></p>
+  <p>
+    Short write-ups of projects, experiments, and notes &mdash; work that shows
+    what I've been building and thinking about, even when it didn't turn into a
+    paper. Expect ML experiments, optimization curiosities, and the occasional
+    self-hosting or finance side-project.
+  </p>
+
+  {% if site.posts.size > 0 %}
+  <ul class="post-list">
+    {% for post in site.posts %}
+    <li>
+      <span class="post-date">{{ post.date | date: "%b %-d, %Y" }}</span>
+      <a href="{{ post.url | relative_url }}"><papertitle>{{ post.title }}</papertitle></a>
+      {% if post.summary %}<p class="post-summary">{{ post.summary }}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p><em>Posts coming soon.</em></p>
+  {% endif %}
+</div>

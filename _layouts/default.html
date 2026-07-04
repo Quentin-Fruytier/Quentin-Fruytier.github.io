@@ -1,0 +1,24 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>{% if page.title and page.url != "/" %}{{ page.title }} &middot; {% endif %}Quentin Fruytier</title>
+
+  <meta name="author" content="Quentin Fruytier">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" type="text/css" href="{{ '/stylesheet.css' | relative_url }}">
+  <link rel="icon" type="image/jpg" href="{{ '/images/me2025.jpg' | relative_url }}">
+</head>
+
+<body>
+  <div class="nav-wrap">
+    <nav class="site-nav">
+      <a href="{{ '/' | relative_url }}"{% if page.url == "/" %} class="active"{% endif %}>Home</a>
+      <a href="{{ '/blog/' | relative_url }}"{% if page.nav_active == "blog" %} class="active"{% endif %}>Blog</a>
+    </nav>
+  </div>
+
+  {{ content }}
+</body>
+</html>

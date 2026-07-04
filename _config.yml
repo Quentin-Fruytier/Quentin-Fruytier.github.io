@@ -1,0 +1,28 @@
+title: Quentin Fruytier
+author: Quentin Fruytier
+description: >-
+  Personal website of Quentin Fruytier — PhD candidate in ECE at UT Austin,
+  working on machine learning, optimization theory, and representation learning.
+url: "https://quentin-fruytier.github.io"
+baseurl: ""
+
+# Build settings
+future: true               # don't drop posts if the build clock is behind a post date
+permalink: /blog/:title/
+
+# Every post gets the post layout and highlights the Blog nav tab automatically
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post
+      nav_active: blog
+
+# Files Jekyll should not copy into the built site
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor
+  - README.md
+  - .gitattributes
