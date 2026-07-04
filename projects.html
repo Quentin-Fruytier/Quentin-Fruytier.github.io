@@ -1,0 +1,43 @@
+---
+layout: default
+title: Projects
+nav_active: projects
+permalink: /projects/
+---
+<div class="content-wrap">
+  <p><heading>Projects</heading></p>
+  <p>
+    Self-hosted tools and side projects &mdash; things I've built to scratch an itch or
+    explore an idea, outside of my published research. Each links to a write-up (and code,
+    where it's public).
+  </p>
+
+  <!-- ===== Qwent-Finance ===== -->
+  <table class="project-card"><tbody>
+    <tr>
+      <td class="project-thumb">
+        <a href="{{ '/projects/qwent-finance/' | relative_url }}">
+          <div class="thumb-placeholder">Qwent&#8209;Finance</div>
+        </a>
+      </td>
+      <td class="project-body">
+        <a href="{{ '/projects/qwent-finance/' | relative_url }}"><papertitle>Qwent-Finance</papertitle></a>
+        <br>
+        <span class="project-tags">Self-hosted &middot; Python / Flask &middot; Chronos-2 (GPU) &middot; Gemini AI council</span>
+        <p>
+          A fully local stock-trend visualizer that puts <strong>Chronos-2</strong> probabilistic
+          forecast cones next to momentum and moving-average signals, backs every claim with an
+          honest, adversarially-verified backtest suite, and convenes an <strong>AI investment
+          council</strong> that deliberates and issues a target allocation. Everything runs on my own
+          hardware &mdash; no data leaves the machine.
+        </p>
+        <a href="{{ '/projects/qwent-finance/' | relative_url }}">Details</a>
+        <!-- repo link filled in once the public release is live:
+        &nbsp;&middot;&nbsp; <a href="https://github.com/Quentin-Fruytier/qwent-finance">Code</a>
+        -->
+      </td>
+    </tr>
+  </tbody></table>
+
+  <!-- Future projects (e.g. the unrolled-diffusion work) drop in as additional .project-card blocks. -->
+</div>

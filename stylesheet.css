@@ -215,3 +215,66 @@ span.highlight {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 13px;
 }
+
+/* ---- Projects ---- */
+.project-card {
+  width: 100%;
+  border: 0;
+  border-spacing: 0;
+  border-collapse: separate;
+  margin-bottom: 8px;
+}
+
+.project-card .project-thumb {
+  width: 25%;
+  padding: 20px;
+  vertical-align: middle;
+}
+
+.project-card .project-body {
+  width: 75%;
+  padding: 20px;
+  vertical-align: middle;
+}
+
+/* Text thumbnail used until a real screenshot is dropped in */
+.thumb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  aspect-ratio: 1 / 1;
+  padding: 10px;
+  background: linear-gradient(135deg, #1772d0 0%, #0f4f8f 100%);
+  color: #fff;
+  font-family: 'Lato', Verdana, Helvetica, sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  border-radius: 6px;
+}
+
+.project-tags {
+  color: #888;
+  font-size: 13px;
+}
+
+/* Marked slots for screenshots to be added later */
+.shot-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 120px;
+  margin: 16px 0;
+  padding: 16px;
+  color: #999;
+  font-size: 13px;
+  font-style: italic;
+  background: #f6f8fa;
+  border: 1px dashed #ccc;
+  border-radius: 6px;
+}
+
+.project-links {
+  color: #555;
+}

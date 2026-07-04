@@ -1,0 +1,74 @@
+---
+layout: default
+title: Qwent-Finance
+nav_active: projects
+permalink: /projects/qwent-finance/
+---
+<div class="content-wrap post">
+  <p><heading>Qwent-Finance</heading></p>
+  <p class="project-tags">
+    Self-hosted &middot; Python / Flask &middot; Chronos-2 (GPU) &middot; Gemini AI council &middot; yfinance / FRED
+  </p>
+
+  <p>
+    <strong>Qwent-Finance</strong> is a fully self-hosted portfolio-analytics workbench I built to
+    answer a simple question honestly: <em>can a modern zero-shot time-series foundation model say
+    anything useful about my holdings?</em> It pairs a local stock-trend visualizer with
+    <strong>Chronos-2</strong> probabilistic &ldquo;second opinions,&rdquo; a rigorously
+    backtested findings tab, and an <strong>AI investment council</strong> that deliberates over the
+    live signals. Everything runs on my own machine on my own GPU &mdash; <strong>no data ever
+    leaves the box</strong>, and it's decidedly <em>not</em> financial advice.
+  </p>
+
+  <!-- Screenshot slot: the Forecast tab (cone + overlays). Replace with images/qwent-finance/forecast.png -->
+  <div class="shot-placeholder">Screenshot &mdash; Forecast tab: Chronos-2 cone + vol/trend overlays</div>
+
+  <p><b>Why it's interesting.</b> Two threads I care about meet here: <strong>self-hosting</strong>
+    (keeping private financial data local, running a 120M-param forecaster on a consumer RTX GPU,
+    and wiring it into my own AI workspace) and <strong>epistemic honesty in quantitative finance</strong>
+    (every backtested claim carries a verdict, and the headline conclusion is a negative result I
+    trust more than a positive one I don't).</p>
+
+  <p><b>What it does.</b></p>
+  <ul>
+    <li><b>Forecast</b> &mdash; price history with a calibrated Chronos-2 forecast cone, plus a unified
+      overlay menu (SMA 50/200, volatility, momentum, two vol-regime shadings, and macro-context
+      series from FRED), and an editable allocation builder with expected returns per horizon.</li>
+    <li><b>Hottest</b> &mdash; a sortable watchlist of ~28 tickers: annualized volatility flags,
+      Chronos / momentum / moving-average columns per horizon, and trailing 1w/1m/3m moves.</li>
+    <li><b>Performance</b> &mdash; every backtested finding with an explicit verdict (this is where
+      the honesty lives), alongside the live allocation and buy/sell-map panels.</li>
+    <li><b>Advisor Backtest &amp; My Portfolio</b> &mdash; drop in your own trade history to get a
+      FIFO realized/unrealized P&amp;L breakdown and a no-look-ahead &ldquo;would the model have
+      agreed with my trades?&rdquo; check.</li>
+    <li><b>Council</b> &mdash; an AI investment committee (a Quant on the Chronos signals, a
+      web-grounded Researcher, a Risk skeptic, and a CIO Judge) deliberates and issues a
+      &le;10-position target allocation, with a decision log and a retrospective learning loop.
+      It runs natively on Gemini &mdash; no external workspace required.</li>
+  </ul>
+
+  <!-- Screenshot slot: the Council tab. Replace with images/qwent-finance/council.png -->
+  <div class="shot-placeholder">Screenshot &mdash; Council tab: deliberation + allocation timeline</div>
+
+  <p><b>The honest bottom line.</b> Across an adversarially-verified experiment suite, zero-shot
+    Chronos-2 is a <strong>well-calibrated cone and a direction/conviction gauge &mdash; not an alpha
+    source</strong>. It roughly matches 6-month momentum, has no cross-sectional skill for
+    <em>which</em> asset to buy, and shows no profitable sell signal; equal-weight allocation wins
+    on a risk-adjusted basis. The <strong>one robust, shippable payoff</strong> is a
+    volatility-plus-trend position-sizing overlay that meaningfully cuts maximum drawdown for a
+    modest Sharpe lift. (A clean forward test through a real post-2025 drawdown is the honest
+    evaluation still outstanding.) I'm writing these findings up as a short manuscript.</p>
+
+  <p><b>Stack &amp; self-hosting.</b> Python + Flask serve the app locally; Chronos-2 runs on a
+    consumer NVIDIA GPU (~20&nbsp;ms/forecast, CPU fallback); market data comes from yfinance and
+    macro series from FRED; the council uses the Gemini API (with optional local Ollama / Groq
+    routing). It optionally embeds inside my self-hosted AI workspace via an iframe, but the full
+    app &mdash; council included &mdash; runs entirely on its own.</p>
+
+  <p class="project-links">
+    <!-- Public release in progress; link goes live with the Qwent-Finance repo. -->
+    <em>Public code release coming soon.</em>
+  </p>
+
+  <p class="post-back"><a href="{{ '/projects/' | relative_url }}">&larr; Back to projects</a></p>
+</div>
