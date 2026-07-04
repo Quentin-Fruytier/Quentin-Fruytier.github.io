@@ -12,62 +12,149 @@ permalink: /projects/qwent-finance/
 
   <p>
     <strong>Qwent-Finance</strong> is a fully self-hosted portfolio-analytics workbench I built to
-    answer a simple question honestly: <em>can a modern zero-shot time-series foundation model say
-    anything useful about my holdings?</em> It pairs a local stock-trend visualizer with
-    <strong>Chronos-2</strong> probabilistic &ldquo;second opinions,&rdquo; a rigorously
-    backtested findings tab, and an <strong>AI investment council</strong> that deliberates over the
-    live signals. Everything runs on my own machine on my own GPU &mdash; <strong>no data ever
-    leaves the box</strong>, and it's decidedly <em>not</em> financial advice.
+    answer one question honestly: <em>can a modern zero-shot time-series foundation model say
+    anything genuinely useful about my holdings?</em> It pairs a local stock-trend visualizer with
+    <strong>Chronos-2</strong> probabilistic forecasts, a rigorously backtested findings tab, an
+    <strong>AI investment council</strong> that deliberates over the live signals, and a practice
+    <strong>game</strong> that turns the model into something you can actually play against.
+    Everything runs on my own machine on my own GPU &mdash; <strong>no data ever leaves the box</strong>
+    &mdash; and it is emphatically <em>not</em> financial advice.
   </p>
 
-  <!-- Screenshot slot: the Forecast tab (cone + overlays). Replace with images/qwent-finance/forecast.png -->
-  <div class="shot-placeholder">Screenshot &mdash; Forecast tab: Chronos-2 cone + vol/trend overlays</div>
+  <figure class="figure">
+    <img src="{{ '/images/qwent-finance/forecast-cone.png' | relative_url }}"
+         alt="Forecast tab: a Chronos-2 probabilistic forecast cone over SLV price history, with a horizon table of median moves and 50/80/90% bands.">
+    <figcaption>
+      <b>Forecast tab.</b> A calibrated Chronos-2 fan chart (here on silver): median path plus
+      50 / 80 / 90% bands, your buys/sells overlaid, and a per-horizon table of expected moves and
+      conviction. The honest read is &ldquo;is my call inside the model's cone, or a genuinely
+      contrarian bet?&rdquo; &mdash; not a price target.
+    </figcaption>
+  </figure>
 
   <p><b>Why it's interesting.</b> Two threads I care about meet here: <strong>self-hosting</strong>
-    (keeping private financial data local, running a 120M-param forecaster on a consumer RTX GPU,
-    and wiring it into my own AI workspace) and <strong>epistemic honesty in quantitative finance</strong>
-    (every backtested claim carries a verdict, and the headline conclusion is a negative result I
-    trust more than a positive one I don't).</p>
+    (private financial data stays local, a 120M-param forecaster runs on a consumer RTX GPU at
+    ~20&nbsp;ms/forecast, and the whole thing plugs into my own AI workspace) and <strong>epistemic
+    honesty in quantitative finance</strong> &mdash; every backtested claim carries an adversarially
+    verified verdict, and the headline result is a <em>negative</em> one I trust more than a positive
+    one I don't.</p>
 
   <p><b>What it does.</b></p>
   <ul>
-    <li><b>Forecast</b> &mdash; price history with a calibrated Chronos-2 forecast cone, plus a unified
-      overlay menu (SMA 50/200, volatility, momentum, two vol-regime shadings, and macro-context
-      series from FRED), and an editable allocation builder with expected returns per horizon.</li>
-    <li><b>Hottest</b> &mdash; a sortable watchlist of ~28 tickers: annualized volatility flags,
-      Chronos / momentum / moving-average columns per horizon, and trailing 1w/1m/3m moves.</li>
-    <li><b>Performance</b> &mdash; every backtested finding with an explicit verdict (this is where
-      the honesty lives), alongside the live allocation and buy/sell-map panels.</li>
-    <li><b>Advisor Backtest &amp; My Portfolio</b> &mdash; drop in your own trade history to get a
-      FIFO realized/unrealized P&amp;L breakdown and a no-look-ahead &ldquo;would the model have
-      agreed with my trades?&rdquo; check.</li>
-    <li><b>Council</b> &mdash; an AI investment committee (a Quant on the Chronos signals, a
-      web-grounded Researcher, a Risk skeptic, and a CIO Judge) deliberates and issues a
-      &le;10-position target allocation, with a decision log and a retrospective learning loop.
-      It runs natively on Gemini &mdash; no external workspace required.</li>
+    <li><b>Forecast</b> &mdash; price history with the Chronos-2 cone, a unified overlay menu (SMA
+      50/200, volatility, momentum, two vol-regime shadings, macro-context series from FRED), and an
+      editable allocation builder showing expected return per horizon under Chronos vs momentum vs
+      moving-average.</li>
+    <li><b>Hottest</b> &mdash; a sortable watchlist of ~28 tickers: volatility flags, Chronos / momentum
+      / MA columns per horizon, and trailing 1w / 1m / 3m moves.</li>
+    <li><b>Performance</b> &mdash; every backtested finding with an explicit verdict (the section this
+      write-up is really about).</li>
+    <li><b>Advisor Backtest &amp; My Portfolio</b> &mdash; drop in your own trades for a FIFO
+      realized/unrealized breakdown and a no-look-ahead &ldquo;would the model have agreed?&rdquo; check.</li>
+    <li><b>Council</b> &mdash; an AI committee that deliberates and issues a target allocation (below).</li>
+    <li><b>Game</b> &mdash; an anonymized allocation game you play against equal-weight (below).</li>
   </ul>
 
-  <!-- Screenshot slot: the Council tab. Replace with images/qwent-finance/council.png -->
-  <div class="shot-placeholder">Screenshot &mdash; Council tab: deliberation + allocation timeline</div>
+  <figure class="figure">
+    <img src="{{ '/images/qwent-finance/forecast-allocation.png' | relative_url }}"
+         alt="Forecast tab allocation builder: an editable target mix with a pie chart and a table of expected returns per horizon under Chronos, momentum, and moving-average, plus a comparison panel.">
+    <figcaption>
+      <b>Build &amp; compare an allocation.</b> Set a target mix and see what each approach
+      (Chronos median / momentum / moving-average) projects for it at every horizon &mdash; then stack
+      your plan against the model spreads. Illustrative; equal-weight is the backtest benchmark.
+    </figcaption>
+  </figure>
 
-  <p><b>The honest bottom line.</b> Across an adversarially-verified experiment suite, zero-shot
-    Chronos-2 is a <strong>well-calibrated cone and a direction/conviction gauge &mdash; not an alpha
-    source</strong>. It roughly matches 6-month momentum, has no cross-sectional skill for
-    <em>which</em> asset to buy, and shows no profitable sell signal; equal-weight allocation wins
-    on a risk-adjusted basis. The <strong>one robust, shippable payoff</strong> is a
-    volatility-plus-trend position-sizing overlay that meaningfully cuts maximum drawdown for a
-    modest Sharpe lift. (A clean forward test through a real post-2025 drawdown is the honest
-    evaluation still outstanding.) I'm writing these findings up as a short manuscript.</p>
+  <h3 class="section-h">What we actually found</h3>
+  <p>
+    The Chronos advisor was evaluated with rolling-origin, point-in-time backtests
+    (~1,300 forecasts per config) and an adversarial verification loop &mdash; every claim below was
+    recomputed independently and stress-tested. The findings are candid, and most of the
+    &ldquo;exciting&rdquo; ones are exciting because they <em>refute</em> a tempting idea:
+  </p>
+  <ul class="findings">
+    <li><span class="v-ok">calibrated</span> <b>The cone is a well-behaved second opinion.</b> Best
+      config (single-series) gets ~56% direction and +3.8%/call &mdash; real, but a low ~0.14 Sharpe:
+      honest about its own uncertainty rather than pretending to an edge.</li>
+    <li><span class="v-ok">insight</span> <b>Conviction is a setup detector, not an oracle.</b> Sorting
+      forecasts by conviction (|expected move| &divide; cone width), the top quintile hits <b>66%</b>
+      direction vs 55% for the bottom &mdash; &ldquo;only act when the model is convinced&rdquo; roughly
+      doubles the edge. <span class="muted">Verified caveat: as a long-only precision gate the lift is
+      only ~+2pp (90% CI [&minus;3, +7]) and it reverses in 2022 &mdash; so it ships as a soft tilt, not
+      a win-rate guarantee.</span></li>
+    <li><span class="v-no">refuted</span> <b>Market-timing makes things worse.</b> &ldquo;Hold when
+      bullish, cash when bearish&rdquo; turned 2022's &minus;8% into <b>&minus;27%</b> &mdash; it held
+      the drops and cashed the rebounds. Do not deploy.</li>
+    <li><span class="v-no">refuted</span> <b>There is no profitable sell signal.</b> Across 28 ETFs the
+      reward-optimal policy is literally &ldquo;never actively sell&rdquo; (27/28); active exits run
+      about &minus;4.5%/yr on a time-in-market basis.</li>
+    <li><span class="v-no">no skill</span> <b>No stock-picking ability.</b> Ranking the universe by
+      Chronos metrics has a negative information coefficient &mdash; it tilts toward the laggards.</li>
+    <li><span class="v-no">no edge</span> <b>Equal-weight wins.</b> Under a softmax allocation over any
+      metric, uniform 1/N is Sharpe-optimal; concentrating via Chronos <em>lowers</em> return.
+      Diversification dominates selection.</li>
+    <li><span class="v-no">dead</span> <b>The &ldquo;learn when to trust it&rdquo; gate failed.</b> A
+      meta-labeling adapter had out-of-sample AUC ~0.47&ndash;0.51 (indistinguishable from noise) &mdash;
+      too few genuinely independent events to learn from.</li>
+    <li><span class="v-meh">honest</span> <b>Memorization caveat.</b> Chronos-2's weights postdate
+      ~Oct 2025, so pre-2025 backtests aren't truly out-of-sample &mdash; read as optimistic. The one
+      clean test still open is a forward paper-trade through a real drawdown.</li>
+  </ul>
 
-  <p><b>Stack &amp; self-hosting.</b> Python + Flask serve the app locally; Chronos-2 runs on a
-    consumer NVIDIA GPU (~20&nbsp;ms/forecast, CPU fallback); market data comes from yfinance and
-    macro series from FRED; the council uses the Gemini API (with optional local Ollama / Groq
-    routing). It optionally embeds inside my self-hosted AI workspace via an iframe, but the full
-    app &mdash; council included &mdash; runs entirely on its own.</p>
+  <div class="callout">
+    <b>The one robust, shippable payoff.</b> A volatility-plus-trend <b>position-sizing overlay</b>
+    &mdash; scale exposure down when volatility rises and trend rolls over &mdash; cut VOO's max
+    drawdown from <b>&minus;34% to &minus;19%</b> (Sharpe 0.92 &rarr; 1.03) and was robust across all
+    28 assets (shallower drawdown in 96% of them). Notably it's <em>price-only</em>: covariates and a
+    fitted hazard model didn't beat it. Risk management, not prediction, is where the edge lives.
+  </div>
+
+  <h3 class="section-h">Council &mdash; an AI investment committee</h3>
+  <p>
+    A one-button committee deliberates over the live signals on Gemini: a <b>Quant</b> (Chronos only),
+    a web-grounded <b>Researcher</b> (why today's names moved, cited), a <b>Risk</b> skeptic, and a
+    <b>CIO Judge</b> who issues a &le;10-position target allocation using SGOV as an earning cash/hedge
+    sleeve. A note-taker keeps a credited decision log, and a retrospective feeds past calls' realized
+    performance back in so the committee learns from its own track record. It's portfolio-blind &mdash;
+    it sees the market briefing and Chronos signals, never my holdings &mdash; and runs entirely on its
+    own (no external workspace required).
+  </p>
+  <figure class="figure">
+    <img src="{{ '/images/qwent-finance/council.png' | relative_url }}"
+         alt="Council tab: the Judge's target allocation pie, a draggable allocation timeline, a weighted predictions table across horizons, and a takeaways panel.">
+    <figcaption>
+      <b>Council tab.</b> The Judge's allocation (grouped by asset class), a draggable timeline of past
+      meetings with realized-vs-benchmark tracking, weighted Chronos / SMA / momentum predictions, and a
+      takeaways panel explaining every position.
+    </figcaption>
+  </figure>
+
+  <h3 class="section-h">Game &mdash; play against the model</h3>
+  <p>
+    The most honest test of &ldquo;is this useful?&rdquo; is whether <em>you</em> can allocate better with
+    the signals than without. The <b>allocation practice game</b> hands you five <b>anonymized</b> assets
+    (plus cash) with a year of history and the same Chronos signals as the Forecast tab &mdash; but
+    <b>no names, no dates, no macro</b> &mdash; and asks you to play forward through one hidden year,
+    trying to beat equal-weight. Every decision is logged and scored against the 1/N benchmark, so the
+    track record accumulates as genuine, bias-controlled evidence.
+  </p>
+  <figure class="figure">
+    <img src="{{ '/images/qwent-finance/game.png' | relative_url }}"
+         alt="Game tab: the allocation practice game with a New Game button and a track record of past games showing return and whether each beat equal-weight.">
+    <figcaption>
+      <b>Game tab.</b> Anonymized allocation practice with a running track record &mdash; games played,
+      how often you beat equal-weight, and average excess return &mdash; a small, self-inflicted
+      out-of-sample test.
+    </figcaption>
+  </figure>
+
+  <p><b>Stack &amp; self-hosting.</b> Python + Flask serve the app locally; Chronos-2 runs on a consumer
+    NVIDIA GPU (CPU fallback); prices come from yfinance and macro series from FRED; the council uses the
+    Gemini API (optional local Ollama / Groq routing). It optionally embeds inside my self-hosted AI
+    workspace via an iframe, but the full app &mdash; council and game included &mdash; runs standalone.</p>
 
   <p class="project-links">
-    <!-- Public release in progress; link goes live with the Qwent-Finance repo. -->
-    <em>Public code release coming soon.</em>
+    <em>Public code release coming soon &mdash; the app will be open-sourced as Qwent-Finance.</em>
   </p>
 
   <p class="post-back"><a href="{{ '/projects/' | relative_url }}">&larr; Back to projects</a></p>

@@ -278,3 +278,77 @@ span.highlight {
 .project-links {
   color: #555;
 }
+
+/* ---- Project detail page: figures, sections, findings ---- */
+.section-h {
+  font-family: 'Lato', Verdana, Helvetica, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 34px 0 6px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #eee;
+}
+
+figure.figure {
+  margin: 20px 0;
+}
+
+figure.figure img {
+  width: 100%;
+  height: auto;
+  border: 1px solid #e2e2e2;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+figure.figure figcaption {
+  margin-top: 8px;
+  color: #666;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Findings list with verdict chips */
+ul.findings {
+  list-style: none;
+  padding-left: 0;
+}
+
+ul.findings li {
+  margin: 10px 0;
+  padding-left: 2px;
+  line-height: 1.55;
+}
+
+ul.findings .v-ok,
+ul.findings .v-no,
+ul.findings .v-meh {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  padding: 1px 7px;
+  margin-right: 6px;
+  border-radius: 10px;
+  vertical-align: 1px;
+}
+
+ul.findings .v-ok  { background: #e3f2e6; color: #1e7a34; }   /* positive / insight */
+ul.findings .v-no  { background: #fde6e6; color: #b3261e; }   /* refuted / no edge */
+ul.findings .v-meh { background: #fff4d6; color: #8a6d1a; }   /* caveat */
+
+.findings .muted {
+  color: #888;
+  font-size: 13px;
+}
+
+/* Highlighted takeaway box */
+.callout {
+  margin: 22px 0;
+  padding: 14px 18px;
+  background: #f2f7fd;
+  border-left: 4px solid #1772d0;
+  border-radius: 4px;
+  line-height: 1.55;
+}
