@@ -1,13 +1,13 @@
 ---
 title: "When does unrolling help flow matching?"
 date: 2026-07-04
-summary: "Training flow-matching models the way they're actually sampled (unrolling + BPTT) turns out to quietly reduce to consistency and shortcut models — once you apply a gradient-variance argument."
-repo: https://github.com/Quentin-Fruytier/Unrolled-Flow-Matching
+summary: "Training flow-matching models the way they're actually sampled (unrolling + BPTT) turns out to quietly reduce to consistency and shortcut models — once you apply a gradient-variance argument. Full manuscript PDF linked."
+repo: https://github.com/Quentin-Fruytier/Windowed-trajectory-flow-matching
 math: true
 ---
 
 This is a walk through the front half of a manuscript I've been working on,
-*When Does Unrolling Help Flow Matching?* The short version: training a
+[*When Does Unrolling Help Flow Matching?*]({{ '/data/When_Does_Unrolling_Help_Flow_Matching.pdf' | relative_url }}) (full PDF). The short version: training a
 flow-matching model the way it is actually *sampled* — unrolling the solver and
 backpropagating through it — is the obvious fix for a real problem, but it's the
 wrong default. Analyzing *why* is the interesting part, because it lands on a
@@ -73,7 +73,7 @@ $$\|\hat v^1-v^1\|$$ (single-step FM) plus a* detached consistency *term
 $$\|\hat v^2-\hat v^1\|$$, giving $$\mathcal{L}=4\|\hat v^1-v^1\|^2+\|\hat v^2-\hat v^1\|^2$$.*
 
 The nice part is how literal this is in code. In
-[`synthetic_testbench/losses.py`](https://github.com/Quentin-Fruytier/Unrolled-Flow-Matching)
+[`synthetic_testbench/losses.py`](https://github.com/Quentin-Fruytier/Windowed-trajectory-flow-matching)
 the whole reduction is one function:
 
 ```python
@@ -137,10 +137,11 @@ Unrolled flow matching is best understood **not as an end in itself, but as the
 derivation that anchors consistency- and shortcut-style training.** The recipe
 that falls out is: **minibatch OT + field parametrization + dropped cross-terms
 (anchored consistency)**. The same objective carries over from the 2D testbench
-to CelebA-$$64^2$$ (via `image_celeba_ddpm/looped_model.py` over a Karras-UNet
+to CelebA-$$64^2$$ (via `celeba_ddpm/looped_model.py` over a Karras-UNet
 DDPM backbone), where field again beats $$\hat x_0$$ on FID.
 
-*Code: [Unrolled-Flow-Matching](https://github.com/Quentin-Fruytier/Unrolled-Flow-Matching)
-(`synthetic_testbench/` for the 2D experiments, `image_celeba_ddpm/` for CelebA).
+*Manuscript: [When Does Unrolling Help Flow Matching? (PDF)]({{ '/data/When_Does_Unrolling_Help_Flow_Matching.pdf' | relative_url }}).
+Code: [Windowed-trajectory-flow-matching](https://github.com/Quentin-Fruytier/Windowed-trajectory-flow-matching)
+(`synthetic_testbench/` for the 2D experiments, `celeba_ddpm/` for CelebA).
 More to come on the experiments — the S-Curve / Swiss-Roll vector fields and the
 CelebA FID tables — in a follow-up.*
