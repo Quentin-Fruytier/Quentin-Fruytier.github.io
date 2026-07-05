@@ -142,6 +142,4 @@ DDPM backbone), where field again beats $$\hat x_0$$ on FID.
 
 *Manuscript: [When Does Unrolling Help Flow Matching? (PDF)]({{ '/data/When_Does_Unrolling_Help_Flow_Matching.pdf' | relative_url }}).
 Code: [Windowed-trajectory-flow-matching](https://github.com/Quentin-Fruytier/Windowed-trajectory-flow-matching)
-(`synthetic_testbench/` for the 2D experiments, `celeba_ddpm/` for CelebA).
-More to come on the experiments — the S-Curve / Swiss-Roll vector fields and the
-CelebA FID tables — in a follow-up.*
+(`synthetic_testbench/` for the 2D experiments, `celeba_ddpm/` for CelebA).*
