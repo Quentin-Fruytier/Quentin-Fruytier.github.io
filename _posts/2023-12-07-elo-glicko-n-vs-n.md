@@ -1,5 +1,5 @@
 ---
-title: "A case against Elo and Glicko for n-vs-n games"
+title: "Ranking Algorithms: A case against Elo and Glicko for n-vs-n games"
 date: 2023-12-07
 summary: "A course project: why Elo, Glicko, and Glicko-2 degrade sharply as team size grows in n-vs-n esports — a simulation study, and the case for performance-aware ratings."
 math: true
