@@ -8,3 +8,7 @@ _site/
 vendor/
 .bundle/
 Gemfile.lock
+
+# local-only staging (never published)
+_drafts/
+_staging/
