@@ -352,3 +352,68 @@ ul.findings .v-meh { background: #fff4d6; color: #8a6d1a; }   /* caveat */
   border-radius: 4px;
   line-height: 1.55;
 }
+
+/* ---- Readability ---- */
+body, td, p, li {
+  line-height: 1.5;
+}
+
+/* Topical groups inside Research Publications (subordinate to <heading>) */
+subheading {
+  font-family: 'Lato', Verdana, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #777;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+}
+
+/* ---- Updates list: five visible, the rest behind "Show all" ---- */
+ul.updates {
+  padding-left: 20px;
+  margin: 0;
+}
+
+ul.updates li {
+  margin-bottom: 9px;
+}
+
+ul.updates.collapsed li.update-old {
+  display: none;
+}
+
+button.linkbtn {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #1772d0;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.linkbtn:hover {
+  color: #f09228;
+}
+
+/* ---- Phones: stack the two-column tables ---- */
+@media (max-width: 640px) {
+  table td {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    padding: 8px 4% !important;
+  }
+
+  td img {
+    display: block;
+    max-width: 260px !important;
+    margin: 0 auto;
+  }
+
+  .nav-wrap,
+  .content-wrap {
+    padding-left: 4%;
+    padding-right: 4%;
+  }
+}
