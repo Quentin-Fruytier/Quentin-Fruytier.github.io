@@ -368,6 +368,12 @@ subheading {
   text-transform: uppercase;
 }
 
+/* Small grey attribution line under an entry (internship, affiliation) */
+.note {
+  color: #777;
+  font-size: 13px;
+}
+
 /* ---- Updates list: five visible, the rest behind "Show all" ---- */
 ul.updates {
   padding-left: 20px;
