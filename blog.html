@@ -7,22 +7,33 @@ permalink: /blog/
 <div class="content-wrap">
   <p><heading>Blog</heading></p>
   <p>
-    Short write-ups of projects, experiments, and notes &mdash; work that shows
-    what I've been building and thinking about, even when it didn't turn into a
-    paper. Expect ML experiments, optimization curiosities, and the occasional
+    Write-ups of my research and side projects, meant to be read rather than
+    cited: the intuition behind a paper, with the visualizations the paper had
+    no room for, next to experiments and notes that never became one. Expect
+    diffusion language models, optimization curiosities, and the occasional
     self-hosting or finance side-project.
   </p>
 
   {% if site.posts.size > 0 %}
-  <ul class="post-list">
+  <div class="post-cards">
     {% for post in site.posts %}
-    <li>
-      <span class="post-date">{{ post.date | date: "%b %-d, %Y" }}</span>
-      <a href="{{ post.url | relative_url }}"><papertitle>{{ post.title }}</papertitle></a>
-      {% if post.summary %}<p class="post-summary">{{ post.summary }}</p>{% endif %}
-    </li>
+    <a class="post-card" href="{{ post.url | relative_url }}">
+      <div class="post-card-media">
+        {% if post.image %}
+        <img src="{{ post.image | relative_url }}" alt="{{ post.title | escape }}" loading="lazy">
+        {% else %}
+        <div class="post-card-placeholder"><span>{{ post.title | truncate: 48 }}</span></div>
+        {% endif %}
+      </div>
+      <div class="post-card-body">
+        <span class="post-card-meta">{{ post.date | date: "%b %-d, %Y" }}{% if post.tags.size > 0 %} &middot; {{ post.tags | join: " &middot; " }}{% endif %}</span>
+        <span class="post-card-title">{{ post.title }}</span>
+        {% if post.summary %}<p class="post-card-summary">{{ post.summary }}</p>{% endif %}
+        <span class="post-card-more">Read the post &rarr;</span>
+      </div>
+    </a>
     {% endfor %}
-  </ul>
+  </div>
   {% else %}
   <p><em>Posts coming soon.</em></p>
   {% endif %}

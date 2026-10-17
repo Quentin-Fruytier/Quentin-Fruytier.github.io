@@ -3,6 +3,8 @@ title: "Diffusion Models for Images: When does unrolling help flow matching?"
 date: 2026-07-04
 summary: "Training flow-matching models the way they're actually sampled (unrolling + BPTT) turns out to quietly reduce to consistency and shortcut models — once you apply a gradient-variance argument. Full manuscript PDF linked."
 repo: https://github.com/Quentin-Fruytier/Windowed-trajectory-flow-matching
+image: /images/unrolled-cfm/method-overview.png
+tags: [Diffusion]
 math: true
 ---
 

@@ -178,6 +178,101 @@ span.highlight {
 }
 
 /* ---- Blog post list ---- */
+/* ---- Blog index: one card per post (thumbnail or animated hero on the left) ---- */
+.post-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 18px 0 8px;
+}
+
+.post-card {
+  display: flex;
+  align-items: stretch;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  transition: box-shadow .18s ease-in-out, transform .18s ease-in-out, border-color .18s ease-in-out;
+}
+
+.post-card:hover {
+  border-color: #d5d5d5;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.post-card-media {
+  flex: 0 0 300px;
+  background: #f6f8fa;
+  border-right: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.post-card-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  min-height: 190px;
+}
+
+.post-card-placeholder {
+  width: 100%;
+  min-height: 190px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+  box-sizing: border-box;
+  color: #888;
+  font-weight: 700;
+  background: repeating-linear-gradient(135deg, #f6f8fa, #f6f8fa 10px, #eef1f5 10px, #eef1f5 20px);
+}
+
+.post-card-body {
+  flex: 1 1 auto;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.post-card-meta {
+  color: #888;
+  font-size: 13px;
+}
+
+.post-card-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1772d0;
+  line-height: 1.3;
+}
+
+.post-card:hover .post-card-title {
+  color: #f09228;
+}
+
+.post-card-summary {
+  margin: 0;
+  color: #444;
+}
+
+.post-card-more {
+  margin-top: auto;
+  padding-top: 6px;
+  color: #1772d0;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Legacy plain list (kept for any page that still uses it) */
 .post-list {
   list-style: none;
   padding-left: 0;
@@ -215,6 +310,21 @@ span.highlight {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 13px;
 }
+
+/* Paper tables inside posts */
+.table-scroll { overflow-x: auto; margin: 16px 0; }
+.paper-table { border-collapse: collapse; font-size: 13px; width: 100%; min-width: 560px; }
+.paper-table caption { caption-side: top; text-align: left; color: #444; font-size: 13px; padding: 0 0 8px; line-height: 1.45; }
+.paper-table th, .paper-table td { padding: 5px 8px; text-align: right; border-bottom: 1px solid #eee; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.paper-table th:first-child, .paper-table td:first-child { text-align: left; }
+.paper-table thead th { border-bottom: 1px solid #ccc; color: #333; }
+.paper-table th.grp, .paper-table td.grp { text-align: center; }
+.paper-table tr.lane td { text-align: left; color: #666; background: #f6f8fa; font-size: 12px; font-style: italic; }
+.paper-table tr.lane td.grp { text-align: center; font-style: normal; }
+.paper-table .dp { color: #0f766e; }
+.paper-table .dn { color: #b42318; }
+.paper-table .d0 { color: #888; }
+.paper-table .at { font-size: 11px; color: #888; }
 
 /* ---- Projects ---- */
 .project-card {
@@ -417,9 +527,32 @@ button.linkbtn:hover {
     margin: 0 auto;
   }
 
+  /* paper tables keep their grid and scroll sideways instead of stacking */
+  .paper-table td,
+  .paper-table th {
+    display: table-cell;
+    width: auto !important;
+    padding: 5px 8px !important;
+  }
+
   .nav-wrap,
   .content-wrap {
     padding-left: 4%;
     padding-right: 4%;
+  }
+
+  .post-card {
+    flex-direction: column;
+  }
+
+  .post-card-media {
+    flex-basis: auto;
+    border-right: 0;
+    border-bottom: 1px solid #eee;
+  }
+
+  .post-card-media img {
+    min-height: 0;
+    max-height: 220px;
   }
 }
