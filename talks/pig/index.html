@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PIG · talk slides · Quentin Fruytier</title>
+<meta name="description" content="Talk slides for PIG: Parallel Inconsistency Guidance for accelerating diffusion language models, with live animations.">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+html,body{margin:0;height:100%;background:#0E1116;overflow:hidden;-webkit-font-smoothing:antialiased}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{position:relative;flex:none;width:1920px;height:1080px;transform-origin:50% 50%}
+.slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .35s ease,visibility 0s linear .35s}
+.slide.on{opacity:1;visibility:visible;transition:opacity .35s ease}
+.slide>section{position:relative;width:1920px;height:1080px;box-sizing:border-box;overflow:hidden;font-size:32px}
+.slide section *{box-sizing:border-box;margin:0}
+.slide section h1{font-size:96px;font-weight:600;line-height:1.1}
+.slide section h2{font-size:64px;font-weight:600;line-height:1.15}
+.slide section h3{font-size:44px;font-weight:600;line-height:1.2}
+.slide section p{line-height:1.4}
+.slide section div:not([style*="display"]){display:flex;flex-direction:column}
+.slide section img{display:block}
+.slide section table{border-collapse:collapse;width:100%}
+.slide section th,.slide section td{padding:.35em .6em;border:1px solid rgba(0,0,0,.14);text-align:left}
+.slide section th{font-weight:600}
+iframe.emb{display:block;background:transparent}
+img.freeze{display:none}
+.slide.frozen img.freeze{display:block}
+#bar{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;
+ padding:12px 12px 14px;font:14px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;color:#D5DBE1;
+ background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.6));opacity:0;transition:opacity .3s;pointer-events:none}
+body.ui #bar{opacity:1;pointer-events:auto}
+#bar a,#bar button{color:#fff;background:rgba(255,255,255,.14);border:0;border-radius:6px;padding:7px 11px;font:inherit;cursor:pointer;text-decoration:none}
+#bar a:hover,#bar button:hover{background:rgba(255,255,255,.26)}
+#bar button:disabled{opacity:.35;cursor:default}
+#bar .sep{width:12px}
+#count{min-width:64px;text-align:center;font-variant-numeric:tabular-nums}
+#help{opacity:.7}
+body.static #bar{display:none}
+body.static .slide{transition:none}
+@media (max-width:700px){#help{display:none}}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+<div class="slide" data-id="cover">
+<section id="cover" data-transition="fade" style="background:#14202B;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:space-between">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#F28C5B">arXiv 2610.17375 · 2026</p>
+<div style="display:flex;flex-direction:column;gap:32px">
+<h1 style="font-family:'Source Serif 4', Georgia, serif;font-size:120px;font-weight:600;line-height:1.05;color:#F1EEE6">PIG</h1>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:64px;font-weight:500;line-height:1.15;color:#F1EEE6;width:1500px">Parallel Inconsistency Guidance for accelerating diffusion language models</h2>
+<p style="font-size:32px;line-height:1.4;color:#B8C2CC;width:1300px">Commit tokens in parallel only while they are predicted to match what decoding them one at a time would give.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Quentin Fruytier · Anton Xue · Sanjay Shakkottai · Sujay Sanghavi</p>
+<p style="font-size:28px;color:#B8C2CC">The University of Texas at Austin</p>
+</div>
+</section>
+</div>
+<div class="slide" data-id="promise">
+<section id="promise" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">The promise, and the gap</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Today’s samplers leave most of diffusion’s parallelism unused</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:44px 48px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#6B7480">Confidence threshold · Fast-dLLM’s rule</p>
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:120px;font-weight:600;line-height:1;color:#6B7480">2–3×</p>
+<p style="font-size:28px;line-height:1.4;color:#4A5560">tokens per forward pass in Nemotron-Labs-Diffusion’s own diffusion mode: 1.9× at 3B, 2.6× at 8B, 2.7× at 14B (ten-benchmark averages)</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FCFBF8;border:2px solid #C2410C;border-radius:16px;padding:43px 47px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Oracle · same 8B model, block 32</p>
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:120px;font-weight:600;line-height:1;color:#C2410C">7.6×</p>
+<p style="font-size:28px;line-height:1.4;color:#4A5560">when an oracle picks the commits that reproduce one-slot-at-a-time decoding exactly. Nemotron’s verdict: confidence sampling is “far from optimal”.</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="font-size:26px;line-height:1.4;color:#4A5560;width:1664px">Headline speedups add machinery beyond the sampler: Nemotron’s 6× lets its AR mode verify diffusion drafts, and DiffusionGemma’s ~20 tokens per pass comes after retraining with sampler distillation and RL (up from 5).</p>
+<p style="font-size:30px;line-height:1.4;color:#14202B;width:1664px">Speed is <b>tokens per forward pass (TPF)</b>: higher is faster. PIG is a better sampler for a frozen model.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1450px;font-size:24px;color:#6B7480">Fu et al. 2026 (Nemotron-Labs-Diffusion), Tables 5 and 7, §4.2 (oracle on SPEED-Bench) · DiffusionGemma Team 2026, §5</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">2</p>
+</section>
+</div>
+<div class="slide" data-id="catch" data-freeze="1">
+<section id="catch" data-transition="fade" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">The catch</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Tokens decoded together never see each other</h2>
+<iframe class="emb" sandbox="allow-scripts" title="animation" style="position:absolute;left:128px;top:290px;width:1664px;height:520px;border:0" data-srcdoc="&lt;!doctype html&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;html,body{margin:0;padding:0;overflow:hidden;background:transparent}canvas{position:fixed;left:0;top:0;width:100vw;height:100vh}&lt;/style&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+(()=&gt;{const W=1664,H=520,L=12;
+const c=document.getElementById(&#x27;c&#x27;),x=c.getContext(&#x27;2d&#x27;);let k=1,ox=0,oy=0,t0=null;
+function fit(){const d=Math.max(2,devicePixelRatio||1);c.width=Math.round(innerWidth*d);c.height=Math.round(innerHeight*d);k=Math.min(c.width/W,c.height/H);ox=(c.width-W*k)/2;oy=(c.height-H*k)/2}
+addEventListener(&#x27;resize&#x27;,fit);fit();
+const F=&#x27;&quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif&#x27;,FM=&#x27;Menlo,Consolas,&quot;Courier New&quot;,monospace&#x27;;
+const C={bg:&#x27;#FCFBF8&#x27;,ink:&#x27;#14202B&#x27;,soft:&#x27;#4A5560&#x27;,mute:&#x27;#8A929A&#x27;,line:&#x27;#DAD6CC&#x27;,mask:&#x27;#ECE9E1&#x27;,card:&#x27;#F4F2EC&#x27;,ok:&#x27;#0F766E&#x27;,bad:&#x27;#B42318&#x27;,acc:&#x27;#C2410C&#x27;,wh:&#x27;#FCFBF8&#x27;};
+const cl=v=&gt;v &lt; 0?0:(v &gt; 1?1:v),sg=(t,a,b)=&gt;cl((t-a)/(b-a)),eo=p=&gt;1-Math.pow(1-p,3),pu=(t,a,b)=&gt;Math.sin(Math.PI*sg(t,a,b)),mx=(a,b,p)=&gt;a+(b-a)*p;
+let BA=1;
+function R(X,Y,w,h,r,f,s,lw){x.beginPath();x.roundRect(X,Y,w,h,r);if(f){x.fillStyle=f;x.fill()}if(s){x.strokeStyle=s;x.lineWidth=lw||2;x.stroke()}}
+function T(s,X,Y,o){o=o||{};x.font=(o.w||500)+&#x27; &#x27;+(o.z||28)+&#x27;px &#x27;+(o.f||F);x.fillStyle=o.c||C.ink;x.textAlign=o.a||&#x27;left&#x27;;x.textBaseline=&#x27;middle&#x27;;x.globalAlpha=BA*(o.al==null?1:o.al);x.fillText(s,X,Y);x.globalAlpha=BA}
+function G(a,fn){if(a &lt;= 0.001)return;const o=BA;BA=o*a;x.globalAlpha=BA;fn();BA=o;x.globalAlpha=BA}
+function tick(X,Y,ok){x.lineWidth=5;x.lineCap=&#x27;round&#x27;;x.strokeStyle=ok?C.ok:C.bad;x.beginPath();if(ok){x.moveTo(X-14,Y);x.lineTo(X-4,Y+11);x.lineTo(X+16,Y-13)}else{x.moveTo(X-12,Y-12);x.lineTo(X+12,Y+12);x.moveTo(X+12,Y-12);x.lineTo(X-12,Y+12)}x.stroke()}
+function slot(cx,cy,tok,kd,s){const w=170,h=58;x.save();x.translate(cx,cy);x.scale(s,s);
+ if(!tok){R(-w/2,-h/2,w,h,10,C.mask,C.line,2);T(kd,0,0,{z:26,w:600,c:C.mute,a:&#x27;center&#x27;})}
+ else{R(-w/2,-h/2,w,h,10,kd===&#x27;bad&#x27;?C.bad:C.ok);T(tok,0,0,{z:32,w:700,c:C.wh,a:&#x27;center&#x27;})}x.restore()}
+function opts(cx,y,o){o.forEach((r,i)=&gt;{const yy=y+i*38,best=r[1] &gt;= o[1-i][1];T(r[0],cx-85,yy,{z:24,w:best?700:500,c:best?C.ink:C.soft});
+ R(cx+14,yy-7,74,14,7,C.mask);R(cx+14,yy-7,Math.max(8,74*r[1]),14,7,best?C.acc:&#x27;#B9B3A6&#x27;);T(Math.round(r[1]*100)+&#x27;%&#x27;,cx+98,yy,{z:24,f:FM,c:C.soft})})}
+function lane(Y0,t,par){R(20,Y0,W-40,232,18,C.card,C.line,2);
+ T(par?&#x27;PARALLEL · both slots in one pass&#x27;:&#x27;SEQUENTIAL · one slot per pass&#x27;,48,Y0+38,{z:26,w:700,c:C.acc});
+ const g=Math.max(pu(t,0.7,1.4),par?0:pu(t,3.0,3.7));R(620,Y0+18,210,40,20,g &gt; 0.02?&#x27;rgba(194,65,12,&#x27;+(0.1+0.25*g).toFixed(3)+&#x27;)&#x27;:&#x27;#EAE7DF&#x27;,g &gt; 0.02?C.acc:C.line,2);T(&#x27;forward pass&#x27;,725,Y0+38,{z:24,w:600,a:&#x27;center&#x27;,c:g &gt; 0.3?C.acc:C.soft});
+ const np=t &lt; 1?0:(par||t &lt; 3.3?1:2);T(&#x27;passes: &#x27;+np,W-48,Y0+38,{z:26,w:700,c:C.soft,a:&#x27;right&#x27;});
+ const ty=Y0+104;T(&#x27;The&#x27;,48,ty,{z:32});
+ const c1=par?t &gt;= 2.4:t &gt;= 2.4,c2=par?t &gt;= 2.4:t &gt;= 4.9,p=a=&gt;0.85+0.15*eo(sg(t,a,a+0.4));
+ slot(250,ty,c1?&#x27;dog&#x27;:null,&#x27;M1&#x27;,c1?p(2.4):1);slot(500,ty,c2?(par?&#x27;meows&#x27;:&#x27;barks&#x27;):null,c2&amp;&amp;par?&#x27;bad&#x27;:&#x27;M2&#x27;,c2?p(par?2.4:4.9):1);T(&#x27;.&#x27;,596,ty,{z:32});
+ const oa=eo(sg(t,1.4,2.0));
+ G(oa*(1-sg(t,2.4,2.8)),()=&gt;opts(250,Y0+160,[[&#x27;dog&#x27;,0.51],[&#x27;cat&#x27;,0.49]]));
+ if(par)G(oa*(1-sg(t,2.4,2.8)),()=&gt;opts(500,Y0+160,[[&#x27;barks&#x27;,0.49],[&#x27;meows&#x27;,0.51]]));
+ else{const q=eo(sg(t,3.7,4.5));G(oa*(1-sg(t,4.9,5.3)),()=&gt;opts(500,Y0+160,[[&#x27;barks&#x27;,mx(0.49,0.97,q)],[&#x27;meows&#x27;,mx(0.51,0.03,q)]]))}
+ const va=sg(t,par?3.2:5.6,par?3.6:6.0);G(va,()=&gt;{T(par?&#x27;The dog meows.&#x27;:&#x27;The dog barks.&#x27;,760,ty,{z:36,w:700,c:par?C.bad:C.ok});
+  T(par?&#x27;1 pass · the two slots never saw each other&#x27;:&#x27;2 passes · the second slot saw “dog”&#x27;,760,Y0+168,{z:28,c:C.soft});tick(1580,ty,!par)})}
+function draw(t){BA=1;x.globalAlpha=1;R(1,1,W-2,H-2,22,C.bg,C.line,2);
+ const GA=t &lt; 0.4?sg(t,0,0.4):1-sg(t,L-0.6,L);G(GA,()=&gt;{lane(18,t,false);lane(270,t,true)})}
+function loop(n){if(t0===null)t0=n;const t=((n-t0)/1000)%L;x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,c.width,c.height);x.setTransform(k,0,0,k,ox,oy);draw(t);requestAnimationFrame(loop)}
+const m=/t([\d.]+)/.exec(location.hash);if(m){x.setTransform(k,0,0,k,ox,oy);draw(+m[1])}else requestAnimationFrame(loop)})();
+&lt;/script&gt;"></iframe>
+<p style="position:absolute;left:128px;top:840px;width:1664px;font-size:28px;line-height:1.4;color:#4A5560">Each slot is plausible on its own; the pair is not. Probabilities are illustrative (after the paper’s dog / cat example).</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1300px;font-size:24px;color:#6B7480">PIG · arXiv 2610.17375</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">3</p>
+<img class="freeze" src="assets/b99054e7fce2e318b9179acbef192183.png" alt="Final frame: sequential decoding gives The dog barks in 2 passes; parallel decoding gives The dog meows in 1 pass" style="position:absolute;left:128px;top:290px;width:1664px;height:520px;object-fit:contain">
+</section>
+</div>
+<div class="slide" data-id="rules">
+<section id="rules" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">The paradigm</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Trajectory tracking: commit in parallel, stay on the sequential path</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:24px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:36px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#6B7480">Confidence</p>
+<h3 style="font-size:36px;font-weight:600;line-height:1.2">Fast-dLLM</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Commits every slot the model is sure of, many per pass.</p>
+<div style="flex:1"></div>
+<p style="font-size:26px;line-height:1.4;color:#B42318"><b>On its own:</b> blind to coupling. Two confident slots can still contradict each other.</p>
+</div>
+<p style="align-self:center;width:48px;font-size:64px;font-weight:600;text-align:center;color:#6B7480">+</p>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:36px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#6B7480">Valid joint sampling</p>
+<h3 style="font-size:36px;font-weight:600;line-height:1.2">Sequential decoding</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Each token sees the ones before it, so the text is a valid sample of the model’s joint distribution. Independence rules (DAPD, DEMASK) only test that slots look uncoupled.</p>
+<div style="flex:1"></div>
+<p style="font-size:26px;line-height:1.4;color:#B42318"><b>On its own:</b> one token per pass.</p>
+</div>
+<p style="align-self:center;width:48px;font-size:64px;font-weight:600;text-align:center;color:#6B7480">→</p>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#F8E3D6;border:2px solid #C2410C;border-radius:16px;padding:35px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Trajectory tracking · PIG</p>
+<h3 style="font-size:36px;font-weight:600;line-height:1.2">Both, supervised</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Commit in confidence order, as many slots as keep the output equal to the sequential decode.</p>
+<div style="flex:1"></div>
+<p style="font-size:26px;line-height:1.4;color:#0F766E"><b>Observable target:</b> replay any set one slot at a time and check whether a token changed.</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="font-size:32px;line-height:1.4;color:#14202B;width:1600px">Matching the sequential trajectory asks for more than independence, and decoding one slot at a time supplies the labels. Parallel decoding becomes a <b>supervised task</b>.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1300px;font-size:24px;color:#6B7480">Wu et al. 2025 (Fast-dLLM); Kim et al. 2026 (DAPD); Ringel et al. 2026 (DEMASK)</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">4</p>
+</section>
+</div>
+<div class="slide" data-id="objective">
+<section id="objective" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">The objective</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">One round is a budgeted selection</h2>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:column;gap:16px;background:#14202B;border-radius:16px;padding:48px 56px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:40px;line-height:1.3;color:#F1EEE6">maximise |S|   subject to   R(S) ≤ φ</p>
+<p style="font-size:30px;line-height:1.4;color:#B8C2CC">R(S) = the number of slots in S whose parallel token differs from the token sequential decoding would give. Computing it exactly costs |S| extra passes.</p>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:40px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">Idea 1</p>
+<h3 style="font-size:36px;font-weight:600;line-height:1.2">Confidence order turns search into a prefix</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5560">Scan masked slots by decreasing confidence. The only decision left is where to stop.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:40px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">Idea 2</p>
+<h3 style="font-size:36px;font-weight:600;line-height:1.2">Regret is predictable from one pass</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5560">A slot flips only if the set moves its distribution past its top-1 margin: confidence gives the margin, pairwise effects give the push.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1300px;font-size:24px;color:#6B7480">PIG · arXiv 2610.17375 · Section 3</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">5</p>
+</section>
+</div>
+<div class="slide" data-id="estimator" data-freeze="1">
+<section id="estimator" data-transition="fade" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">The estimator</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">One adapter predicts every pairwise effect</h2>
+<iframe class="emb" sandbox="allow-scripts" title="animation" style="position:absolute;left:128px;top:300px;width:1664px;height:600px;border:0" data-srcdoc="&lt;!doctype html&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;html,body{margin:0;padding:0;overflow:hidden;background:transparent}canvas{position:fixed;left:0;top:0;width:100vw;height:100vh}&lt;/style&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+(()=&gt;{const W=1664,H=600,L=12;
+const c=document.getElementById(&#x27;c&#x27;),x=c.getContext(&#x27;2d&#x27;);let k=1,ox=0,oy=0,t0=null;
+function fit(){const d=Math.max(2,devicePixelRatio||1);c.width=Math.round(innerWidth*d);c.height=Math.round(innerHeight*d);k=Math.min(c.width/W,c.height/H);ox=(c.width-W*k)/2;oy=(c.height-H*k)/2}
+addEventListener(&#x27;resize&#x27;,fit);fit();
+const F=&#x27;&quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif&#x27;,FM=&#x27;Menlo,Consolas,&quot;Courier New&quot;,monospace&#x27;;
+const C={bg:&#x27;#FCFBF8&#x27;,ink:&#x27;#14202B&#x27;,soft:&#x27;#4A5560&#x27;,mute:&#x27;#8A929A&#x27;,line:&#x27;#DAD6CC&#x27;,mask:&#x27;#ECE9E1&#x27;,card:&#x27;#F4F2EC&#x27;,ok:&#x27;#0F766E&#x27;,bad:&#x27;#B42318&#x27;,acc:&#x27;#C2410C&#x27;,wh:&#x27;#FCFBF8&#x27;};
+const cl=v=&gt;v &lt; 0?0:(v &gt; 1?1:v),sg=(t,a,b)=&gt;cl((t-a)/(b-a)),eo=p=&gt;1-Math.pow(1-p,3),pu=(t,a,b)=&gt;Math.sin(Math.PI*sg(t,a,b));
+let BA=1;
+function R(X,Y,w,h,r,f,s,lw){x.beginPath();x.roundRect(X,Y,w,h,r);if(f){x.fillStyle=f;x.fill()}if(s){x.strokeStyle=s;x.lineWidth=lw||2;x.stroke()}}
+function T(s,X,Y,o){o=o||{};x.font=(o.w||500)+&#x27; &#x27;+(o.z||28)+&#x27;px &#x27;+(o.f||F);x.fillStyle=o.c||C.ink;x.textAlign=o.a||&#x27;left&#x27;;x.textBaseline=&#x27;middle&#x27;;x.globalAlpha=BA*(o.al==null?1:o.al);x.fillText(s,X,Y);x.globalAlpha=BA}
+function TW(s,z,w,f){x.font=(w||500)+&#x27; &#x27;+z+&#x27;px &#x27;+(f||F);return x.measureText(s).width}
+function G(a,fn){if(a &lt;= 0.001)return;const o=BA;BA=o*a;x.globalAlpha=BA;fn();BA=o;x.globalAlpha=BA}
+function chip(cx,cy,w,h,t,z){R(cx-w/2,cy-h/2,w,h,10,C.mask,C.line,2);T(t,cx,cy,{z:z-6,w:600,c:C.mute,a:&#x27;center&#x27;})}
+function arrow(x1,y1,x2,y2,col){x.strokeStyle=col;x.fillStyle=col;x.lineWidth=4;x.beginPath();x.moveTo(x1,y1);x.lineTo(x2,y2);x.stroke();const a=Math.atan2(y2-y1,x2-x1);x.beginPath();x.moveTo(x2,y2);x.lineTo(x2-16*Math.cos(a-0.45),y2-16*Math.sin(a-0.45));x.lineTo(x2-16*Math.cos(a+0.45),y2-16*Math.sin(a+0.45));x.closePath();x.fill()}
+function glow(g,rgb,X,Y,w,h){R(X,Y,w,h,14,g &gt; 0.02?&#x27;rgba(&#x27;+rgb+&#x27;,&#x27;+(0.06+0.2*g).toFixed(3)+&#x27;)&#x27;:&#x27;#F1EFE9&#x27;,g &gt; 0.02?&#x27;rgb(&#x27;+rgb+&#x27;)&#x27;:C.line,2)}
+const DH=[[null,0.03,-0.02],[0.12,null,0.41],[0.06,0.09,null]],SL=[&#x27;M1&#x27;,&#x27;M2&#x27;,&#x27;M3&#x27;],PR=[[&#x27;are&#x27;,&#x27;0.92&#x27;],[&#x27;look&#x27;,&#x27;0.55&#x27;],[&#x27;blue&#x27;,&#x27;0.71&#x27;]];
+function draw(t){BA=1;x.globalAlpha=1;R(1,1,W-2,H-2,22,C.bg,C.line,2);
+ const GA=t &lt; 0.4?sg(t,0,0.4):1-sg(t,L-0.6,L);
+ G(GA,()=&gt;{
+  let X=40;const Y=66;for(const it of [&#x27;Roses&#x27;,&#x27;M1&#x27;,&#x27;red,&#x27;,&#x27;and&#x27;,&#x27;violets&#x27;,&#x27;M2&#x27;,&#x27;M3&#x27;]){if(it[0]===&#x27;M&#x27;&amp;&amp;it.length===2){chip(X+50,Y,100,50,it,32);X+=116}else{T(it,X,Y,{z:32});X+=TW(it,32)+16}}
+  const g1=pu(t,0.6,1.5);glow(g1,&#x27;194,65,12&#x27;,40,118,740,56);T(&#x27;frozen model: one forward pass&#x27;,410,146,{z:26,w:600,a:&#x27;center&#x27;,c:g1 &gt; 0.3?C.acc:C.soft});
+  G(sg(t,1.3,1.6),()=&gt;T(&#x27;what that pass already gives&#x27;,40,214,{z:24,w:700,c:C.soft}));
+  PR.forEach((p,i)=&gt;G(eo(sg(t,1.4+0.25*i,1.8+0.25*i)),()=&gt;{const y=262+66*i;R(40,y-27,740,54,12,C.card,C.line,2);chip(88,y,68,40,SL[i],26);T(&#x27;→&#x27;,134,y,{z:28,c:C.mute});T(&#x27;guess: &#x27;+p[0],168,y,{z:28,w:700});T(&#x27;confidence &#x27;+p[1],762,y,{z:26,c:C.soft,a:&#x27;right&#x27;,f:FM})}));
+  G(sg(t,2.0,2.3),()=&gt;arrow(782,146,836,186,C.mute));
+  const g2=pu(t,2.2,3.0);glow(g2,&#x27;15,118,110&#x27;,840,118,330,170);
+  T(&#x27;adapter&#x27;,1005,166,{z:30,w:700,a:&#x27;center&#x27;,c:g2 &gt; 0.3?C.ok:C.ink});T(&#x27;≈2.2M parameters&#x27;,1005,206,{z:26,a:&#x27;center&#x27;,c:C.soft});T(&#x27;reads the same pass&#x27;,1005,246,{z:24,a:&#x27;center&#x27;,c:C.mute});
+  const M0=1300,MY=200,cw=108,ch=80;
+  G(sg(t,2.8,3.1),()=&gt;{arrow(1172,203,1222,240,C.mute);T(&#x27;source j (committed)&#x27;,M0+cw*1.5,136,{z:24,w:700,c:C.soft,a:&#x27;center&#x27;});
+   SL.forEach((s,j)=&gt;T(s,M0+cw*j+cw/2,172,{z:26,w:700,c:C.soft,a:&#x27;center&#x27;}));SL.forEach((s,i)=&gt;T(s,M0-14,MY+ch*i+ch/2-4,{z:26,w:700,c:C.soft,a:&#x27;right&#x27;}));
+   x.save();x.translate(M0-80,MY+ch*1.5);x.rotate(-Math.PI/2);T(&#x27;receiver i&#x27;,0,0,{z:24,w:700,c:C.soft,a:&#x27;center&#x27;});x.restore()});
+  let n=0;for(let i=0;i &lt; 3;i++)for(let j=0;j &lt; 3;j++){const v=DH[i][j],X0=M0+cw*j+4,Y0=MY+ch*i;
+   if(v===null){G(sg(t,2.9,3.2),()=&gt;{R(X0,Y0,cw-8,ch-8,10,&#x27;#F1EFE9&#x27;);T(&#x27;·&#x27;,X0+cw/2-4,Y0+ch/2-4,{z:30,c:C.mute,a:&#x27;center&#x27;})});continue}
+   const a=3.2+0.3*n;n++;G(eo(sg(t,a,a+0.35)),()=&gt;{const q=Math.min(1,Math.abs(v)/0.45);R(X0,Y0,cw-8,ch-8,10,v &gt; 0?&#x27;rgba(15,118,110,&#x27;+(0.1+0.75*q).toFixed(3)+&#x27;)&#x27;:&#x27;rgba(180,35,24,&#x27;+(0.12+0.6*q).toFixed(3)+&#x27;)&#x27;);
+    T(v.toFixed(2),X0+cw/2-4,Y0+ch/2-4,{z:28,w:700,f:FM,a:&#x27;center&#x27;,c:q &gt; 0.55?C.wh:C.ink})})}
+  const hl=sg(t,5.4,5.8);if(hl &gt; 0){x.globalAlpha=BA*hl;R(M0+cw*2+1,MY+ch-3,cw-2,ch-2,12,null,C.acc,4+2*pu((t-5.4)%1.2,0,1.2));x.globalAlpha=BA;
+   G(hl,()=&gt;{T(&#x27;largest entry: committing blue at M3&#x27;,W-40,496,{z:28,w:700,c:C.acc,a:&#x27;right&#x27;});T(&#x27;moves the model’s uncertainty at M2 the most&#x27;,W-40,534,{z:28,c:C.soft,a:&#x27;right&#x27;})})}
+  G(sg(t,3.4,3.8),()=&gt;T(&#x27;each entry: how much committing j would change the uncertainty at i&#x27;,40,488,{z:26,c:C.soft}));
+  G(sg(t,6.4,6.8),()=&gt;T(&#x27;no extra model calls · under 0.1% of the backbone’s compute&#x27;,40,540,{z:26,w:700,c:C.ok}));
+ })}
+function loop(n){if(t0===null)t0=n;const t=((n-t0)/1000)%L;x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,c.width,c.height);x.setTransform(k,0,0,k,ox,oy);draw(t);requestAnimationFrame(loop)}
+const m=/t([\d.]+)/.exec(location.hash);if(m){x.setTransform(k,0,0,k,ox,oy);draw(+m[1])}else requestAnimationFrame(loop)})();
+&lt;/script&gt;"></iframe>
+<p style="position:absolute;left:128px;bottom:64px;width:1400px;font-size:24px;color:#6B7480">Entry (i, j) ≈ entropy at i now − entropy at i after committing j · values from the paper’s Figure 4</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">6</p>
+<img class="freeze" src="assets/431aaafac97086da62e9d3c6c8000da4.png" alt="Final frame: the adapter reads the same forward pass and fills the 3 by 3 matrix of pairwise effects; the largest entry, 0.41, is committing blue at M3 on M2" style="position:absolute;left:128px;top:300px;width:1664px;height:600px;object-fit:contain">
+</section>
+</div>
+<div class="slide" data-id="pigint" data-freeze="1">
+<section id="pigint" data-transition="fade" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Decoder 1 · single-round regret</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">PIG.INT: admit by confidence until φ is spent</h2>
+<iframe class="emb" sandbox="allow-scripts" title="animation" style="position:absolute;left:128px;top:280px;width:1664px;height:640px;border:0" data-srcdoc="&lt;!doctype html&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;html,body{margin:0;padding:0;overflow:hidden;background:transparent}canvas{position:fixed;left:0;top:0;width:100vw;height:100vh}&lt;/style&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+(()=&gt;{const W=1664,H=640,L=15,EXT=false;
+const c=document.getElementById(&#x27;c&#x27;),x=c.getContext(&#x27;2d&#x27;);let k=1,ox=0,oy=0,t0=null;
+function fit(){const d=Math.max(2,devicePixelRatio||1);c.width=Math.round(innerWidth*d);c.height=Math.round(innerHeight*d);k=Math.min(c.width/W,c.height/H);ox=(c.width-W*k)/2;oy=(c.height-H*k)/2}
+addEventListener(&#x27;resize&#x27;,fit);fit();
+const F=&#x27;&quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif&#x27;,FM=&#x27;Menlo,Consolas,&quot;Courier New&quot;,monospace&#x27;;
+const C={bg:&#x27;#FCFBF8&#x27;,ink:&#x27;#14202B&#x27;,soft:&#x27;#4A5560&#x27;,mute:&#x27;#8A929A&#x27;,line:&#x27;#DAD6CC&#x27;,mask:&#x27;#ECE9E1&#x27;,card:&#x27;#F4F2EC&#x27;,ok:&#x27;#0F766E&#x27;,okL:&#x27;#E3F1EE&#x27;,bad:&#x27;#B42318&#x27;,acc:&#x27;#C2410C&#x27;,wh:&#x27;#FCFBF8&#x27;};
+const cl=v=&gt;v &lt; 0?0:(v &gt; 1?1:v),sg=(t,a,b)=&gt;cl((t-a)/(b-a)),eo=p=&gt;1-Math.pow(1-p,3),pu=(t,a,b)=&gt;Math.sin(Math.PI*sg(t,a,b));
+let BA=1;
+function R(X,Y,w,h,r,f,s,lw){x.beginPath();x.roundRect(X,Y,w,h,r);if(f){x.fillStyle=f;x.fill()}if(s){x.strokeStyle=s;x.lineWidth=lw||2;x.stroke()}}
+function T(s,X,Y,o){o=o||{};x.font=(o.w||500)+&#x27; &#x27;+(o.z||28)+&#x27;px &#x27;+(o.f||F);x.fillStyle=o.c||C.ink;x.textAlign=o.a||&#x27;left&#x27;;x.textBaseline=&#x27;middle&#x27;;x.globalAlpha=BA*(o.al==null?1:o.al);x.fillText(s,X,Y);x.globalAlpha=BA}
+function TW(s,z,w,f){x.font=(w||500)+&#x27; &#x27;+z+&#x27;px &#x27;+(f||F);return x.measureText(s).width}
+function G(a,fn){if(a &lt;= 0.001)return;const o=BA;BA=o*a;x.globalAlpha=BA;fn();BA=o;x.globalAlpha=BA}
+function tick(X,Y,ok){x.lineWidth=5;x.lineCap=&#x27;round&#x27;;x.strokeStyle=ok?C.ok:C.bad;x.beginPath();if(ok){x.moveTo(X-12,Y);x.lineTo(X-3,Y+10);x.lineTo(X+14,Y-12)}else{x.moveTo(X-11,Y-11);x.lineTo(X+11,Y+11);x.moveTo(X+11,Y-11);x.lineTo(X-11,Y+11)}x.stroke()}
+function chip(cx,cy,w,h,t,kd,z,s){s=s==null?1:s;x.save();x.translate(cx,cy);x.scale(s,s);
+ if(kd===&#x27;m&#x27;){R(-w/2,-h/2,w,h,10,C.mask,C.line,2);T(t,0,0,{z:z-6,w:600,c:C.mute,a:&#x27;center&#x27;})}
+ else if(kd===&#x27;n&#x27;){R(-w/2,-h/2,w,h,10,C.ok);T(t,0,0,{z:z,w:700,c:C.wh,a:&#x27;center&#x27;})}
+ else if(kd===&#x27;x&#x27;){R(-w/2,-h/2,w,h,10,C.wh,C.bad,2.5);T(t,0,0,{z:z,w:700,c:C.bad,a:&#x27;center&#x27;});x.strokeStyle=C.bad;x.lineWidth=3;x.beginPath();x.moveTo(-w/2+8,h/2-8);x.lineTo(w/2-8,-h/2+8);x.stroke()}
+ else{R(-w/2,-h/2,w,h,10,C.okL,C.ok,2);T(t,0,0,{z:z,w:700,c:C.ok,a:&#x27;center&#x27;})}
+ x.restore()}
+function sent(st){let X=40;const Y=112,z=34;const sq=[[&#x27;Roses&#x27;],st[0],[&#x27;red,&#x27;],[&#x27;and&#x27;],[&#x27;violets&#x27;],st[1],st[2]];
+ for(const it of sq){if(it.length===1){T(it[0],X,Y,{z:z});X+=TW(it[0],z)+18}else{chip(X+62,Y,124,56,it[0],it[1],z,it[2]);X+=142}}}
+function band(g){R(40,160,W-80,48,12,g &gt; 0.02?&#x27;rgba(194,65,12,&#x27;+(0.06+0.2*g).toFixed(3)+&#x27;)&#x27;:&#x27;#F1EFE9&#x27;,g &gt; 0.02?C.acc:C.line,2);
+ T(&#x27;one forward pass: the frozen model and the adapter read every masked slot&#x27;,W/2,184,{z:26,w:600,c:g &gt; 0.3?C.acc:C.soft,a:&#x27;center&#x27;})}
+const CX=[40,560,1110],RY=[330,418,506],TR=300,MX=EXT?0.3:0.5,TH=EXT?0.14:0.3,SY=EXT?&#x27;θ&#x27;:&#x27;φ&#x27;;
+function heads(){T(&#x27;I · confidence order&#x27;,CX[0],262,{z:26,w:700,c:C.soft});T(EXT?&#x27;II · grow S, look at the next slot&#x27;:&#x27;II · grow the set S&#x27;,CX[1],262,{z:26,w:700,c:C.soft});T(EXT?&#x27;III · value of waiting vs θ&#x27;:&#x27;III · predicted regret vs φ&#x27;,CX[2],262,{z:26,w:700,c:C.soft});T(SY,CX[2]+TR*TH/MX,290,{z:28,w:700,a:&#x27;center&#x27;})}
+function cardI(i,sl,tk,nu,note){const y=RY[i];R(CX[0],y-32,480,64,12,C.card,C.line,2);chip(CX[0]+50,y,72,44,sl,&#x27;m&#x27;,26);T(&#x27;→&#x27;,CX[0]+102,y,{z:28,c:C.mute});T(tk,CX[0]+138,y,{z:30,w:700});
+ if(nu)T(&#x27;ν = &#x27;+nu,CX[0]+462,y,{z:26,c:C.soft,a:&#x27;right&#x27;,f:FM});if(note)T(note,CX[0]+462,y,{z:24,c:C.mute,a:&#x27;right&#x27;})}
+function setII(i,tk,st,nx){const y=RY[i];let X=CX[1];T(&#x27;S = {&#x27;,X,y,{z:28,c:C.soft,f:FM});X+=TW(&#x27;S = {&#x27;,28,500,FM)+10;
+ tk.forEach((s,j)=&gt;{const w=TW(s,26,700)+26;chip(X+w/2,y,w,44,s,st[j],26);X+=w+10});T(&#x27;}&#x27;,X,y,{z:28,c:C.soft,f:FM});
+ if(nx){X+=TW(&#x27;}&#x27;,28,500,FM)+22;T(&#x27;next:&#x27;,X,y,{z:26,c:C.mute});X+=TW(&#x27;next:&#x27;,26)+12;chip(X+36,y,72,44,nx,&#x27;m&#x27;,26)}}
+function bar(i,v,lab,ok,sl){const y=RY[i],X=CX[2];R(X,y-11,TR,22,11,C.mask);if(v &gt; 0.004)R(X,y-11,Math.max(22,TR*Math.min(v,MX)/MX),22,11,ok?C.ok:C.bad);
+ const px=X+TR*TH/MX;x.strokeStyle=C.ink;x.lineWidth=3;x.beginPath();x.moveTo(px,y-17);x.lineTo(px,y+17);x.stroke();
+ G(sl,()=&gt;{T(lab,X+TR+22,y,{z:28,w:700,c:ok?C.ok:C.bad,f:FM});tick(X+TR+196,y,ok)})}
+function status(s,a){G(a,()=&gt;T(s,40,600,{z:28,c:C.soft}))}
+function draw(t){BA=1;x.globalAlpha=1;R(1,1,W-2,H-2,22,C.bg,C.line,2);
+ const GA=t &lt; 0.4?sg(t,0,0.4):1-sg(t,L-0.6,L);
+ G(GA,()=&gt;{const r2=t &gt;= 7.9;
+  T(r2?&#x27;ROUND 2&#x27;:&#x27;ROUND 1&#x27;,40,46,{z:26,w:700,c:C.acc});
+  T(&#x27;forward passes: &#x27;+(t &lt; 1?0:(t &lt; 8.5?1:2)),W-40,46,{z:26,w:600,c:C.soft,a:&#x27;right&#x27;});
+  const pop=a=&gt;0.85+0.15*eo(sg(t,a,a+0.4));
+  sent([t &lt; 6.2?[&#x27;M1&#x27;,&#x27;m&#x27;]:[&#x27;are&#x27;,&#x27;n&#x27;,pop(6.2)],t &lt; 10.4?[&#x27;M2&#x27;,&#x27;m&#x27;]:[&#x27;are&#x27;,&#x27;n&#x27;,pop(10.4)],t &lt; 6.3?[&#x27;M3&#x27;,&#x27;m&#x27;]:[&#x27;blue&#x27;,&#x27;n&#x27;,pop(6.3)]]);
+  band(Math.max(pu(t,0.6,1.5),pu(t,8.1,9.0)));
+  G(1-sg(t,7.3,7.8),()=&gt;{if(t &lt; 1.3)return;heads();
+   [[&#x27;M1&#x27;,&#x27;are&#x27;,&#x27;0.92&#x27;],[&#x27;M3&#x27;,&#x27;blue&#x27;,&#x27;0.71&#x27;],[&#x27;M2&#x27;,&#x27;look&#x27;,&#x27;0.55&#x27;]].forEach((r,i)=&gt;G(eo(sg(t,1.4+0.3*i,1.8+0.3*i)),()=&gt;cardI(i,r[0],r[1],r[2])));
+   const A=[2.8,3.8,4.8];
+   if(!EXT){const V=[0,0.12,0.43],LB=[&#x27;0.00 ≤ φ&#x27;,&#x27;0.12 ≤ φ&#x27;,&#x27;0.43 &gt; φ&#x27;],S=[[&#x27;are&#x27;],[&#x27;are&#x27;,&#x27;blue&#x27;],[&#x27;are&#x27;,&#x27;blue&#x27;,&#x27;look&#x27;]];
+    A.forEach((a,i)=&gt;G(eo(sg(t,a,a+0.35)),()=&gt;{const st=S[i].map((s,j)=&gt;j &lt; S[i].length-1?&#x27;n&#x27;:(i===2&amp;&amp;t &gt;= a+0.7?&#x27;x&#x27;:(t &lt; a+0.9?&#x27;c&#x27;:&#x27;n&#x27;)));
+     setII(i,S[i],st,null);bar(i,V[i]*eo(sg(t,a+0.15,a+0.7)),LB[i],i &lt; 2,sg(t,a+0.55,a+0.8))}))}
+   else{const V=[0.02,0.25],LB=[&#x27;0.02 ≤ θ&#x27;,&#x27;0.25 &gt; θ&#x27;],S=[[&#x27;are&#x27;],[&#x27;are&#x27;,&#x27;blue&#x27;]],NX=[&#x27;M3&#x27;,&#x27;M2&#x27;];
+    A.slice(0,2).forEach((a,i)=&gt;G(eo(sg(t,a,a+0.35)),()=&gt;{const st=S[i].map((s,j)=&gt;j &lt; S[i].length-1?&#x27;n&#x27;:(t &lt; a+0.9?&#x27;c&#x27;:&#x27;n&#x27;));
+     setII(i,S[i],st,NX[i]);bar(i,V[i]*eo(sg(t,a+0.15,a+0.7)),LB[i],i &lt; 1,sg(t,a+0.55,a+0.8))}));
+    G(sg(t,4.9,5.3),()=&gt;T(&#x27;M2 is not reached this round&#x27;,CX[1],RY[2],{z:28,c:C.mute}))}
+  });
+  status(EXT?&#x27;Waiting would change M2 by more than θ: close the round, commit are and blue now.&#x27;:&#x27;Over the budget: the round closes. Commit are and blue in parallel.&#x27;,sg(t,5.7,6.0)*(1-sg(t,7.3,7.8)));
+  G(sg(t,9.0,9.4),()=&gt;{if(t &lt; 9)return;heads();cardI(0,&#x27;M2&#x27;,&#x27;are&#x27;,null,EXT?&#x27;re-read after waiting&#x27;:&#x27;changed from look&#x27;);
+   G(eo(sg(t,9.6,9.95)),()=&gt;{setII(0,[&#x27;are&#x27;],[t &lt; 10.2?&#x27;c&#x27;:&#x27;n&#x27;],null);bar(0,(EXT?0.01:0.02)*eo(sg(t,9.75,10.2)),&#x27;within &#x27;+SY,true,sg(t,10.0,10.3))})});
+  status(&#x27;Done: 3 tokens in 2 forward passes, the same text as decoding one slot at a time.&#x27;,sg(t,10.9,11.3));
+ })}
+function loop(n){if(t0===null)t0=n;const t=((n-t0)/1000)%L;x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,c.width,c.height);x.setTransform(k,0,0,k,ox,oy);draw(t);requestAnimationFrame(loop)}
+const m=/t([\d.]+)/.exec(location.hash);if(m){x.setTransform(k,0,0,k,ox,oy);draw(+m[1])}else requestAnimationFrame(loop)})();
+&lt;/script&gt;"></iframe>
+<p style="position:absolute;left:128px;bottom:64px;width:1400px;font-size:24px;color:#6B7480">The paper’s Figure 2 example, played through to the end · φ = single-round regret budget</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">7</p>
+<img class="freeze" src="assets/75e28c857a37afa4667c81b4ea97bc86.png" alt="Final frame: round 2 commits are at M2 within the budget phi; 3 tokens in 2 forward passes, the same text as sequential decoding" style="position:absolute;left:128px;top:280px;width:1664px;height:640px;object-fit:contain">
+</section>
+</div>
+<div class="slide" data-id="pigext" data-freeze="1">
+<section id="pigext" data-transition="fade" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Decoder 2 · cross-round regret</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">PIG.EXT: stop early when waiting is worth more than θ</h2>
+<iframe class="emb" sandbox="allow-scripts" title="animation" style="position:absolute;left:128px;top:280px;width:1664px;height:640px;border:0" data-srcdoc="&lt;!doctype html&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;html,body{margin:0;padding:0;overflow:hidden;background:transparent}canvas{position:fixed;left:0;top:0;width:100vw;height:100vh}&lt;/style&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+(()=&gt;{const W=1664,H=640,L=15,EXT=true;
+const c=document.getElementById(&#x27;c&#x27;),x=c.getContext(&#x27;2d&#x27;);let k=1,ox=0,oy=0,t0=null;
+function fit(){const d=Math.max(2,devicePixelRatio||1);c.width=Math.round(innerWidth*d);c.height=Math.round(innerHeight*d);k=Math.min(c.width/W,c.height/H);ox=(c.width-W*k)/2;oy=(c.height-H*k)/2}
+addEventListener(&#x27;resize&#x27;,fit);fit();
+const F=&#x27;&quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif&#x27;,FM=&#x27;Menlo,Consolas,&quot;Courier New&quot;,monospace&#x27;;
+const C={bg:&#x27;#FCFBF8&#x27;,ink:&#x27;#14202B&#x27;,soft:&#x27;#4A5560&#x27;,mute:&#x27;#8A929A&#x27;,line:&#x27;#DAD6CC&#x27;,mask:&#x27;#ECE9E1&#x27;,card:&#x27;#F4F2EC&#x27;,ok:&#x27;#0F766E&#x27;,okL:&#x27;#E3F1EE&#x27;,bad:&#x27;#B42318&#x27;,acc:&#x27;#C2410C&#x27;,wh:&#x27;#FCFBF8&#x27;};
+const cl=v=&gt;v &lt; 0?0:(v &gt; 1?1:v),sg=(t,a,b)=&gt;cl((t-a)/(b-a)),eo=p=&gt;1-Math.pow(1-p,3),pu=(t,a,b)=&gt;Math.sin(Math.PI*sg(t,a,b));
+let BA=1;
+function R(X,Y,w,h,r,f,s,lw){x.beginPath();x.roundRect(X,Y,w,h,r);if(f){x.fillStyle=f;x.fill()}if(s){x.strokeStyle=s;x.lineWidth=lw||2;x.stroke()}}
+function T(s,X,Y,o){o=o||{};x.font=(o.w||500)+&#x27; &#x27;+(o.z||28)+&#x27;px &#x27;+(o.f||F);x.fillStyle=o.c||C.ink;x.textAlign=o.a||&#x27;left&#x27;;x.textBaseline=&#x27;middle&#x27;;x.globalAlpha=BA*(o.al==null?1:o.al);x.fillText(s,X,Y);x.globalAlpha=BA}
+function TW(s,z,w,f){x.font=(w||500)+&#x27; &#x27;+z+&#x27;px &#x27;+(f||F);return x.measureText(s).width}
+function G(a,fn){if(a &lt;= 0.001)return;const o=BA;BA=o*a;x.globalAlpha=BA;fn();BA=o;x.globalAlpha=BA}
+function tick(X,Y,ok){x.lineWidth=5;x.lineCap=&#x27;round&#x27;;x.strokeStyle=ok?C.ok:C.bad;x.beginPath();if(ok){x.moveTo(X-12,Y);x.lineTo(X-3,Y+10);x.lineTo(X+14,Y-12)}else{x.moveTo(X-11,Y-11);x.lineTo(X+11,Y+11);x.moveTo(X+11,Y-11);x.lineTo(X-11,Y+11)}x.stroke()}
+function chip(cx,cy,w,h,t,kd,z,s){s=s==null?1:s;x.save();x.translate(cx,cy);x.scale(s,s);
+ if(kd===&#x27;m&#x27;){R(-w/2,-h/2,w,h,10,C.mask,C.line,2);T(t,0,0,{z:z-6,w:600,c:C.mute,a:&#x27;center&#x27;})}
+ else if(kd===&#x27;n&#x27;){R(-w/2,-h/2,w,h,10,C.ok);T(t,0,0,{z:z,w:700,c:C.wh,a:&#x27;center&#x27;})}
+ else if(kd===&#x27;x&#x27;){R(-w/2,-h/2,w,h,10,C.wh,C.bad,2.5);T(t,0,0,{z:z,w:700,c:C.bad,a:&#x27;center&#x27;});x.strokeStyle=C.bad;x.lineWidth=3;x.beginPath();x.moveTo(-w/2+8,h/2-8);x.lineTo(w/2-8,-h/2+8);x.stroke()}
+ else{R(-w/2,-h/2,w,h,10,C.okL,C.ok,2);T(t,0,0,{z:z,w:700,c:C.ok,a:&#x27;center&#x27;})}
+ x.restore()}
+function sent(st){let X=40;const Y=112,z=34;const sq=[[&#x27;Roses&#x27;],st[0],[&#x27;red,&#x27;],[&#x27;and&#x27;],[&#x27;violets&#x27;],st[1],st[2]];
+ for(const it of sq){if(it.length===1){T(it[0],X,Y,{z:z});X+=TW(it[0],z)+18}else{chip(X+62,Y,124,56,it[0],it[1],z,it[2]);X+=142}}}
+function band(g){R(40,160,W-80,48,12,g &gt; 0.02?&#x27;rgba(194,65,12,&#x27;+(0.06+0.2*g).toFixed(3)+&#x27;)&#x27;:&#x27;#F1EFE9&#x27;,g &gt; 0.02?C.acc:C.line,2);
+ T(&#x27;one forward pass: the frozen model and the adapter read every masked slot&#x27;,W/2,184,{z:26,w:600,c:g &gt; 0.3?C.acc:C.soft,a:&#x27;center&#x27;})}
+const CX=[40,560,1110],RY=[330,418,506],TR=300,MX=EXT?0.3:0.5,TH=EXT?0.14:0.3,SY=EXT?&#x27;θ&#x27;:&#x27;φ&#x27;;
+function heads(){T(&#x27;I · confidence order&#x27;,CX[0],262,{z:26,w:700,c:C.soft});T(EXT?&#x27;II · grow S, look at the next slot&#x27;:&#x27;II · grow the set S&#x27;,CX[1],262,{z:26,w:700,c:C.soft});T(EXT?&#x27;III · value of waiting vs θ&#x27;:&#x27;III · predicted regret vs φ&#x27;,CX[2],262,{z:26,w:700,c:C.soft});T(SY,CX[2]+TR*TH/MX,290,{z:28,w:700,a:&#x27;center&#x27;})}
+function cardI(i,sl,tk,nu,note){const y=RY[i];R(CX[0],y-32,480,64,12,C.card,C.line,2);chip(CX[0]+50,y,72,44,sl,&#x27;m&#x27;,26);T(&#x27;→&#x27;,CX[0]+102,y,{z:28,c:C.mute});T(tk,CX[0]+138,y,{z:30,w:700});
+ if(nu)T(&#x27;ν = &#x27;+nu,CX[0]+462,y,{z:26,c:C.soft,a:&#x27;right&#x27;,f:FM});if(note)T(note,CX[0]+462,y,{z:24,c:C.mute,a:&#x27;right&#x27;})}
+function setII(i,tk,st,nx){const y=RY[i];let X=CX[1];T(&#x27;S = {&#x27;,X,y,{z:28,c:C.soft,f:FM});X+=TW(&#x27;S = {&#x27;,28,500,FM)+10;
+ tk.forEach((s,j)=&gt;{const w=TW(s,26,700)+26;chip(X+w/2,y,w,44,s,st[j],26);X+=w+10});T(&#x27;}&#x27;,X,y,{z:28,c:C.soft,f:FM});
+ if(nx){X+=TW(&#x27;}&#x27;,28,500,FM)+22;T(&#x27;next:&#x27;,X,y,{z:26,c:C.mute});X+=TW(&#x27;next:&#x27;,26)+12;chip(X+36,y,72,44,nx,&#x27;m&#x27;,26)}}
+function bar(i,v,lab,ok,sl){const y=RY[i],X=CX[2];R(X,y-11,TR,22,11,C.mask);if(v &gt; 0.004)R(X,y-11,Math.max(22,TR*Math.min(v,MX)/MX),22,11,ok?C.ok:C.bad);
+ const px=X+TR*TH/MX;x.strokeStyle=C.ink;x.lineWidth=3;x.beginPath();x.moveTo(px,y-17);x.lineTo(px,y+17);x.stroke();
+ G(sl,()=&gt;{T(lab,X+TR+22,y,{z:28,w:700,c:ok?C.ok:C.bad,f:FM});tick(X+TR+196,y,ok)})}
+function status(s,a){G(a,()=&gt;T(s,40,600,{z:28,c:C.soft}))}
+function draw(t){BA=1;x.globalAlpha=1;R(1,1,W-2,H-2,22,C.bg,C.line,2);
+ const GA=t &lt; 0.4?sg(t,0,0.4):1-sg(t,L-0.6,L);
+ G(GA,()=&gt;{const r2=t &gt;= 7.9;
+  T(r2?&#x27;ROUND 2&#x27;:&#x27;ROUND 1&#x27;,40,46,{z:26,w:700,c:C.acc});
+  T(&#x27;forward passes: &#x27;+(t &lt; 1?0:(t &lt; 8.5?1:2)),W-40,46,{z:26,w:600,c:C.soft,a:&#x27;right&#x27;});
+  const pop=a=&gt;0.85+0.15*eo(sg(t,a,a+0.4));
+  sent([t &lt; 6.2?[&#x27;M1&#x27;,&#x27;m&#x27;]:[&#x27;are&#x27;,&#x27;n&#x27;,pop(6.2)],t &lt; 10.4?[&#x27;M2&#x27;,&#x27;m&#x27;]:[&#x27;are&#x27;,&#x27;n&#x27;,pop(10.4)],t &lt; 6.3?[&#x27;M3&#x27;,&#x27;m&#x27;]:[&#x27;blue&#x27;,&#x27;n&#x27;,pop(6.3)]]);
+  band(Math.max(pu(t,0.6,1.5),pu(t,8.1,9.0)));
+  G(1-sg(t,7.3,7.8),()=&gt;{if(t &lt; 1.3)return;heads();
+   [[&#x27;M1&#x27;,&#x27;are&#x27;,&#x27;0.92&#x27;],[&#x27;M3&#x27;,&#x27;blue&#x27;,&#x27;0.71&#x27;],[&#x27;M2&#x27;,&#x27;look&#x27;,&#x27;0.55&#x27;]].forEach((r,i)=&gt;G(eo(sg(t,1.4+0.3*i,1.8+0.3*i)),()=&gt;cardI(i,r[0],r[1],r[2])));
+   const A=[2.8,3.8,4.8];
+   if(!EXT){const V=[0,0.12,0.43],LB=[&#x27;0.00 ≤ φ&#x27;,&#x27;0.12 ≤ φ&#x27;,&#x27;0.43 &gt; φ&#x27;],S=[[&#x27;are&#x27;],[&#x27;are&#x27;,&#x27;blue&#x27;],[&#x27;are&#x27;,&#x27;blue&#x27;,&#x27;look&#x27;]];
+    A.forEach((a,i)=&gt;G(eo(sg(t,a,a+0.35)),()=&gt;{const st=S[i].map((s,j)=&gt;j &lt; S[i].length-1?&#x27;n&#x27;:(i===2&amp;&amp;t &gt;= a+0.7?&#x27;x&#x27;:(t &lt; a+0.9?&#x27;c&#x27;:&#x27;n&#x27;)));
+     setII(i,S[i],st,null);bar(i,V[i]*eo(sg(t,a+0.15,a+0.7)),LB[i],i &lt; 2,sg(t,a+0.55,a+0.8))}))}
+   else{const V=[0.02,0.25],LB=[&#x27;0.02 ≤ θ&#x27;,&#x27;0.25 &gt; θ&#x27;],S=[[&#x27;are&#x27;],[&#x27;are&#x27;,&#x27;blue&#x27;]],NX=[&#x27;M3&#x27;,&#x27;M2&#x27;];
+    A.slice(0,2).forEach((a,i)=&gt;G(eo(sg(t,a,a+0.35)),()=&gt;{const st=S[i].map((s,j)=&gt;j &lt; S[i].length-1?&#x27;n&#x27;:(t &lt; a+0.9?&#x27;c&#x27;:&#x27;n&#x27;));
+     setII(i,S[i],st,NX[i]);bar(i,V[i]*eo(sg(t,a+0.15,a+0.7)),LB[i],i &lt; 1,sg(t,a+0.55,a+0.8))}));
+    G(sg(t,4.9,5.3),()=&gt;T(&#x27;M2 is not reached this round&#x27;,CX[1],RY[2],{z:28,c:C.mute}))}
+  });
+  status(EXT?&#x27;Waiting would change M2 by more than θ: close the round, commit are and blue now.&#x27;:&#x27;Over the budget: the round closes. Commit are and blue in parallel.&#x27;,sg(t,5.7,6.0)*(1-sg(t,7.3,7.8)));
+  G(sg(t,9.0,9.4),()=&gt;{if(t &lt; 9)return;heads();cardI(0,&#x27;M2&#x27;,&#x27;are&#x27;,null,EXT?&#x27;re-read after waiting&#x27;:&#x27;changed from look&#x27;);
+   G(eo(sg(t,9.6,9.95)),()=&gt;{setII(0,[&#x27;are&#x27;],[t &lt; 10.2?&#x27;c&#x27;:&#x27;n&#x27;],null);bar(0,(EXT?0.01:0.02)*eo(sg(t,9.75,10.2)),&#x27;within &#x27;+SY,true,sg(t,10.0,10.3))})});
+  status(&#x27;Done: 3 tokens in 2 forward passes, the same text as decoding one slot at a time.&#x27;,sg(t,10.9,11.3));
+ })}
+function loop(n){if(t0===null)t0=n;const t=((n-t0)/1000)%L;x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,c.width,c.height);x.setTransform(k,0,0,k,ox,oy);draw(t);requestAnimationFrame(loop)}
+const m=/t([\d.]+)/.exec(location.hash);if(m){x.setTransform(k,0,0,k,ox,oy);draw(+m[1])}else requestAnimationFrame(loop)})();
+&lt;/script&gt;"></iframe>
+<p style="position:absolute;left:128px;bottom:64px;width:1450px;font-size:24px;color:#6B7480">Paper’s Figure 3 example · value of waiting: how much the next slot’s risk drops if S commits first</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">8</p>
+<img class="freeze" src="assets/f957c573e4a230f4a47685840aa5d894.png" alt="Final frame: round 2 commits are at M2 after re-reading it, within theta; 3 tokens in 2 forward passes, the same text as sequential decoding" style="position:absolute;left:128px;top:280px;width:1664px;height:640px;object-fit:contain">
+</section>
+</div>
+<div class="slide" data-id="decode" data-freeze="1">
+<section id="decode" data-transition="fade" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">A real decode · LLaDA-8B-Instruct, HumanEval</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">The same program in 19 passes instead of 30</h2>
+<img src="assets/f010783a5359a9a5b0eecc93cd79ee28.gif" alt="Fast-dLLM and PIG.INT decoding the same HumanEval problem side by side; every frame is one forward pass" style="position:absolute;left:128px;top:262px;width:1080px;height:672px;object-fit:contain;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px">
+<div style="position:absolute;left:1256px;top:262px;width:536px;height:672px;display:flex;flex-direction:column;justify-content:center;gap:32px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:96px;font-weight:600;line-height:1;color:#6B7480">30</p>
+<p style="font-size:28px;color:#4A5560">passes · Fast-dLLM</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:96px;font-weight:600;line-height:1;color:#C2410C">19</p>
+<p style="font-size:28px;color:#4A5560">passes · PIG.INT</p>
+</div>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Same model, same prompt, identical program. Each frame is one forward pass; colour marks the pass that committed the token.</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1450px;font-size:24px;color:#6B7480">All 164 HumanEval problems at this setting: 7.2 vs 10.1 tokens per pass, 36% vs 34% pass@1 (64-token blocks)</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">9</p>
+<img class="freeze" src="assets/8f8e6ea72d0f72684e0f8459bea750f6.png" alt="Final frame: Fast-dLLM done in 30 passes and PIG.INT done in 19 passes, same program" style="position:absolute;left:128px;top:262px;width:1080px;height:672px;object-fit:contain;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px">
+</section>
+</div>
+<div class="slide" data-id="frontier">
+<section id="frontier" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Results · four benchmarks, two model families</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">PIG extends the accuracy–speed frontier</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:40px;align-items:center">
+<img src="assets/6cf32dcc2316cc2049b7445c9de8a4e9.png" alt="Accuracy against tokens per forward pass on GSM8K, MATH-500, MBPP and HumanEval for LLaDA-8B-Instruct and Nemotron-3B-Instruct: PIG.INT and PIG.EXT above Fast-dLLM" style="width:1240px;height:644px;object-fit:contain;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px">
+<div style="flex:1;display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:64px;font-weight:600;line-height:1;color:#C2410C">1.7×</p>
+<p style="font-size:26px;line-height:1.35;color:#4A5560">up to Fast-dLLM’s tokens per pass at matched accuracy, LLaDA-8B</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:64px;font-weight:600;line-height:1;color:#C2410C">1.4×</p>
+<p style="font-size:26px;line-height:1.35;color:#4A5560">over Nemotron’s native confidence decoder</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:64px;font-weight:600;line-height:1;color:#C2410C">+28</p>
+<p style="font-size:26px;line-height:1.35;color:#4A5560">accuracy points kept at the baseline’s fastest settings</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1450px;font-size:24px;color:#6B7480">Accuracy vs tokens per forward pass (up and right is better) · Wilson 95% bars · one adapter per model</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">10</p>
+</section>
+</div>
+<div class="slide" data-id="calibration">
+<section id="calibration" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Audit · replaying every committed set one slot at a time</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Predicted regret tracks realized regret</h2>
+<div style="flex:1"></div>
+<img src="assets/35cc0ef6e54879e7aa0eaeb5cf684b63.png" alt="Two panels: per-token predicted vs realized mismatch rate on the diagonal; realized regret per round below the budget phi at every setting" style="width:1664px;height:620px;object-fit:contain;background:#FFFFFF;border:1px solid #E2DED4;border-radius:16px">
+<div style="flex:1"></div>
+<p style="position:absolute;left:128px;bottom:64px;width:1450px;font-size:24px;color:#6B7480">LLaDA-8B-Instruct · (a) per token, on the diagonal · (b) per round, below the budget φ at every setting</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">11</p>
+</section>
+</div>
+<div class="slide" data-id="close">
+<section id="close" data-transition="fade" style="background:#14202B;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:112px 128px;display:flex;flex-direction:column;justify-content:space-between">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#F28C5B">Takeaways</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#F1EEE6">Decode in parallel only where it would not change the answer</h2>
+</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:2px solid #F28C5B;padding:28px 0px 0px 0px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#F1EEE6">A new target</h3>
+<p style="font-size:28px;line-height:1.4;color:#B8C2CC">Control disagreement with sequential decoding, not a proxy for independence.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:2px solid #F28C5B;padding:28px 0px 0px 0px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#F1EEE6">Predictable in one pass</h3>
+<p style="font-size:28px;line-height:1.4;color:#B8C2CC">A 2M-parameter adapter on the frozen model, trained once per backbone.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:2px solid #F28C5B;padding:28px 0px 0px 0px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#F1EEE6">Faster at equal accuracy</h3>
+<p style="font-size:28px;line-height:1.4;color:#B8C2CC">Up to 1.7× Fast-dLLM on LLaDA and 1.4× Nemotron’s own decoder.</p>
+</div>
+</div>
+<div style="display:flex;gap:64px;align-items:flex-end">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:28px;color:#F1EEE6">arxiv.org/abs/2610.17375</p>
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:28px;color:#F1EEE6">github.com/Quentin-Fruytier/PIG-DLM-release</p>
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;color:#B8C2CC">huggingface.co/UT-IFML<br>LLaDA-8B-Instruct-PIG · Nemotron-Labs-Diffusion-3B-PIG</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:20px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#F28C5B">Joint work with</p>
+<div style="display:flex;gap:40px">
+<div style="width:240px;display:flex;flex-direction:column;align-items:center;gap:10px">
+<img src="assets/12a40caf41a412e82856734dc82ff69a.jpg" alt="Anton Xue" style="width:168px;height:168px;object-fit:cover;border-radius:50%;border:3px solid #F28C5B">
+<p style="font-size:28px;font-weight:600;text-align:center;color:#F1EEE6">Anton Xue</p>
+</div>
+<div style="width:240px;display:flex;flex-direction:column;align-items:center;gap:10px">
+<img src="assets/0f4848152cc19b6dbf4a4d4aad3aae59.jpg" alt="Sanjay Shakkottai" style="width:168px;height:168px;object-fit:cover;border-radius:50%;border:3px solid #F28C5B">
+<p style="font-size:28px;font-weight:600;text-align:center;color:#F1EEE6">Sanjay Shakkottai</p>
+</div>
+<div style="width:240px;display:flex;flex-direction:column;align-items:center;gap:10px">
+<img src="assets/febcec02b61053a9fd9547c4d60557a4.jpg" alt="Sujay Sanghavi" style="width:168px;height:168px;object-fit:cover;border-radius:50%;border:3px solid #F28C5B">
+<p style="font-size:28px;font-weight:600;text-align:center;color:#F1EEE6">Sujay Sanghavi</p>
+</div>
+</div>
+<p style="font-size:24px;text-align:right;color:#B8C2CC">The University of Texas at Austin</p>
+</div>
+</div>
+</section>
+</div>
+<div class="slide" data-id="adapter">
+<section id="adapter" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:112px 128px 150px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Backup · the estimator’s adapter</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:52px;font-weight:600;line-height:1.15;color:#14202B">A 2.2M-parameter adapter, fit once per backbone on exact labels</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:56px;align-items:stretch">
+<div style="width:800px;display:flex;flex-direction:column;gap:10px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#6B7480">Architecture</p>
+<div style="display:flex;flex-direction:column;gap:6px;background:#ECE9E1;border:1px solid #DAD6CC;border-radius:12px;padding:16px 24px">
+<p style="font-size:26px;font-weight:600;line-height:1.3">Frozen DLM, the one forward pass</p>
+<p style="font-size:24px;line-height:1.35;color:#4A5560">per slot: last hidden state, token id, entropy, confidence, margin, decode fraction t · attention maps of this round and the last</p>
+</div>
+<p style="font-size:28px;line-height:1;text-align:center;color:#6B7480">↓</p>
+<div style="display:flex;flex-direction:column;gap:10px;background:#F8E3D6;border:2px solid #C2410C;border-radius:12px;padding:16px 24px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Adapter · the only trained part</p>
+<p style="font-size:26px;line-height:1.35"><b>Embed</b> each slot into 192 dimensions</p>
+<p style="font-size:26px;line-height:1.35"><b>Mix</b> with 2 transformer layers over the canvas, conditioned on t, with a bias read from the model’s attention</p>
+<p style="font-size:26px;line-height:1.35"><b>Read out</b> a directed score per pair:<span style="font-family:'Source Serif 4', Georgia, serif;font-style:italic;font-size:28px">f(z<sub>i</sub>)<sup>⊤</sup> W g(z<sub>j</sub>) + b<sub>ij</sub></span></p>
+</div>
+<p style="font-size:28px;line-height:1;text-align:center;color:#6B7480">↓</p>
+<div style="display:flex;flex-direction:column;gap:6px;background:#FCFBF8;border:1px solid #0F766E;border-radius:12px;padding:16px 24px">
+<p style="font-size:26px;font-weight:600;line-height:1.3;color:#0F766E">All 256 × 256 pairwise effects, in the same pass</p>
+<p style="font-size:24px;line-height:1.35;color:#4A5560">under 0.1% of a backbone pass · 12.8 ms per round on an H100</p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:18px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#6B7480">Training, offline</p>
+<div style="display:flex;gap:20px"><p style="width:44px;font-family:'Source Serif 4', Georgia, serif;font-size:40px;font-weight:600;line-height:1.1;color:#C2410C">1</p><p style="flex:1;font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Harvest states.</b> Decode training-split problems (GSM8K, MATH, OpenCoder, MBPP) with the frozen model; snapshot every 24 commits. 34,142 states from 3,721 problems.</p></div>
+<div style="display:flex;gap:20px"><p style="width:44px;font-family:'Source Serif 4', Georgia, serif;font-size:40px;font-weight:600;line-height:1.1;color:#C2410C">2</p><p style="flex:1;font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Label exactly.</b> Commit one slot j and re-run the model: one extra pass gives a whole column of true effects. 24 slots per state (16 most confident, 8 random): 111M labelled pairs.</p></div>
+<div style="display:flex;gap:20px"><p style="width:44px;font-family:'Source Serif 4', Georgia, serif;font-size:40px;font-weight:600;line-height:1.1;color:#C2410C">3</p><p style="flex:1;font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Fit.</b> Huber loss on the labelled entries only, split by problem. Per-pair correlation 0.83 on validation, about 0.8 on the test benchmarks.</p></div>
+<div style="display:flex;gap:20px"><p style="width:44px;font-family:'Source Serif 4', Georgia, serif;font-size:40px;font-weight:600;line-height:1.1;color:#C2410C">4</p><p style="flex:1;font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Calibrate.</b> Replay candidate sets one slot at a time; a frozen table turns (confidence, coupling) into the chance a token differs from sequential decoding.</p></div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:56px;width:1450px;font-size:24px;color:#6B7480">LLaDA-8B-Instruct shown · Nemotron-3B twin: same recipe within one block, validation r = 0.79</p>
+<p style="position:absolute;right:128px;bottom:56px;width:120px;text-align:right;font-size:24px;color:#6B7480">B1</p>
+</section>
+</div>
+</div></div>
+<div id="bar"><a href="../../">Home</a> <a href="https://arxiv.org/abs/2610.17375">Paper</a> <a href="PIG_slides.pdf" download>PDF</a><span class="sep"></span>
+<button id="prev" aria-label="Previous slide">&#9664;</button><span id="count"></span><button id="next" aria-label="Next slide">&#9654;</button>
+<button id="pause">Pause</button><button id="fs">Full screen</button>
+<span id="help">&larr; &rarr; to move &middot; P to pause on the final frame &middot; F full screen</span></div>
+<script>
+(()=>{
+const S=[...document.querySelectorAll('.slide')],stage=document.getElementById('stage'),
+ count=document.getElementById('count'),pb=document.getElementById('pause'),
+ isStatic=new URLSearchParams(location.search).has('static');
+if(isStatic)document.body.classList.add('static');
+let cur=-1;
+function fit(){const k=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform='scale('+k+')'}
+addEventListener('resize',fit);fit();
+function load(sl){sl.querySelectorAll('iframe.emb').forEach(f=>{f.srcdoc=f.dataset.srcdoc});
+ sl.querySelectorAll('img').forEach(i=>{if(/\.gif$/i.test(i.getAttribute('src'))){const s=i.getAttribute('src');i.src='';i.src=s}})}
+function unload(sl){sl.querySelectorAll('iframe.emb').forEach(f=>{f.removeAttribute('srcdoc');f.src='about:blank'});sl.classList.remove('frozen')}
+function freeze(on){const sl=S[cur];if(!sl||!sl.dataset.freeze)return;
+ if(on===undefined)on=!sl.classList.contains('frozen');
+ if(on)sl.classList.add('frozen');else{sl.classList.remove('frozen');unload(sl);load(sl)}
+ ui()}
+function ui(){const sl=S[cur];count.textContent=(cur+1)+' / '+S.length;
+ document.getElementById('prev').disabled=cur<=0;document.getElementById('next').disabled=cur>=S.length-1;
+ pb.disabled=!(sl&&sl.dataset.freeze);pb.textContent=sl&&sl.classList.contains('frozen')?'Play':'Pause'}
+function go(n,fromHash){n=Math.max(0,Math.min(S.length-1,n));if(n===cur)return;
+ if(cur>=0){S[cur].classList.remove('on');unload(S[cur])}
+ cur=n;S[cur].classList.add('on');
+ if(isStatic){if(S[cur].dataset.freeze)S[cur].classList.add('frozen');else load(S[cur])}else load(S[cur]);
+ if(!fromHash)history.replaceState(null,'','#'+(cur+1));ui()}
+const fromHash=()=>{const m=/^#(\d+)/.exec(location.hash);return m?+m[1]-1:0};
+addEventListener('hashchange',()=>go(fromHash(),true));
+document.getElementById('prev').onclick=()=>go(cur-1);document.getElementById('next').onclick=()=>go(cur+1);
+pb.onclick=()=>freeze();
+const fsb=document.getElementById('fs');fsb.onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()};
+addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey)return;const k=e.key;
+ if(['ArrowRight','ArrowDown','PageDown',' ','Enter','n'].includes(k)){go(cur+1);e.preventDefault()}
+ else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){go(cur-1);e.preventDefault()}
+ else if(k==='Home')go(0);else if(k==='End')go(S.length-1);
+ else if(k==='p'||k==='P'||k==='k'||k==='.')freeze();
+ else if(k==='f'||k==='F')fsb.onclick()});
+let tx=null;addEventListener('touchstart',e=>{tx=e.touches[0].clientX;show()},{passive:true});
+addEventListener('touchend',e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)go(cur+(dx<0?1:-1));tx=null},{passive:true});
+let hide=null;function show(){document.body.classList.add('ui');clearTimeout(hide);hide=setTimeout(()=>document.body.classList.remove('ui'),2600)}
+addEventListener('mousemove',show);
+go(fromHash(),true);if(!isStatic)show();
+})();
+</script>
+</body>
+</html>

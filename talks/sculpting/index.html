@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sculpting the Latent Space · SDM 2026 talk · Quentin Fruytier</title>
+<meta name="description" content="SDM 2026 talk slides for Sculpting the Latent Space: Disentanglement with WAE-MMD and Programmable Priors, with live animations.">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+html,body{margin:0;height:100%;background:#0E1116;overflow:hidden;-webkit-font-smoothing:antialiased}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{position:relative;flex:none;width:1920px;height:1080px;transform-origin:50% 50%}
+.slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .35s ease,visibility 0s linear .35s}
+.slide.on{opacity:1;visibility:visible;transition:opacity .35s ease}
+.slide>section{position:relative;width:1920px;height:1080px;box-sizing:border-box;overflow:hidden;font-size:32px}
+.slide section *{box-sizing:border-box;margin:0}
+.slide section h1{font-size:96px;font-weight:600;line-height:1.1}
+.slide section h2{font-size:64px;font-weight:600;line-height:1.15}
+.slide section h3{font-size:44px;font-weight:600;line-height:1.2}
+.slide section p{line-height:1.4}
+.slide section div:not([style*="display"]){display:flex;flex-direction:column}
+.slide section img{display:block}
+.slide section table{border-collapse:collapse;width:100%}
+.slide section th,.slide section td{padding:.35em .6em;border:1px solid rgba(0,0,0,.14);text-align:left}
+.slide section th{font-weight:600}
+iframe.emb{display:block;background:transparent}
+img.freeze{display:none}
+.slide.frozen img.freeze{display:block}
+#bar{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;
+ padding:12px 12px 14px;font:14px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;color:#D5DBE1;
+ background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.6));opacity:0;transition:opacity .3s;pointer-events:none}
+body.ui #bar{opacity:1;pointer-events:auto}
+#bar a,#bar button{color:#fff;background:rgba(255,255,255,.14);border:0;border-radius:6px;padding:7px 11px;font:inherit;cursor:pointer;text-decoration:none}
+#bar a:hover,#bar button:hover{background:rgba(255,255,255,.26)}
+#bar button:disabled{opacity:.35;cursor:default}
+#bar .sep{width:12px}
+#count{min-width:64px;text-align:center;font-variant-numeric:tabular-nums}
+#help{opacity:.7}
+body.static #bar{display:none}
+body.static .slide{transition:none}
+@media (max-width:700px){#help{display:none}}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+<div class="slide" data-id="cover">
+<section id="cover" data-transition="fade" style="background:#1B1F2A;color:#F1EEE6;font-family:'Public Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:space-between">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B9A6F0">SIAM Data Mining 2026 · Salt Lake City</p>
+<div style="display:flex;flex-direction:column;gap:28px">
+<h1 style="font-family:'EB Garamond', Georgia, serif;font-size:120px;font-weight:600;line-height:1.05;color:#F1EEE6">Sculpting the Latent Space</h1>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:56px;font-weight:500;line-height:1.15;color:#BFC3CF">Disentanglement with WAE-MMD and Programmable Priors</h2>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Quentin Fruytier¹ · Akshay Malhotra² · Shahab Hamidi-Rad² · Aditya Sant² · Aryan Mokhtari¹ · Sujay Sanghavi¹</p>
+<p style="font-size:28px;color:#BFC3CF">¹ The University of Texas at Austin · ² InterDigital Communications, AI Lab</p>
+</div>
+</section>
+</div>
+<div class="slide" data-id="goal">
+<section id="goal" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">The goal</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">Disentanglement asks for two different things</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:48px">
+<p style="font-family:'EB Garamond', Georgia, serif;font-size:96px;font-weight:600;line-height:1;color:#5B3FA8">1</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Mutually independent latents</h3>
+<p style="font-size:30px;line-height:1.4;color:#4A5160">No latent unit can be predicted from the others, over the whole dataset.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:48px">
+<p style="font-family:'EB Garamond', Georgia, serif;font-size:96px;font-weight:600;line-height:1;color:#B45309">2</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Semantically meaningful latents</h3>
+<p style="font-size:30px;line-height:1.4;color:#4A5160">Each unit lines up with a real factor: shape, scale, position, colour.</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="font-size:32px;line-height:1.4;width:1450px">Without supervision, (2) is not identifiable: many independent representations fit the same data. Unsupervised methods can only aim at (1). We measure (1), enforce it, and then inject (2) through the prior.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1300px;font-size:24px;color:#6B7080">Hyvärinen & Pajunen 1999; Locatello et al. 2019, 2020; Khemakhem et al. 2020</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">2</p>
+</section>
+</div>
+<div class="slide" data-id="failure" data-freeze="1">
+<section id="failure" data-transition="fade" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">The failure</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">A per-sample KL does not shape the aggregate</h2>
+<iframe class="emb" sandbox="allow-scripts" title="animation" style="position:absolute;left:128px;top:300px;width:1664px;height:600px;border:0" data-srcdoc="&lt;!doctype html&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;html,body{margin:0;padding:0;overflow:hidden;background:transparent}canvas{position:fixed;left:0;top:0;width:100vw;height:100vh}&lt;/style&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+(()=&gt;{const W=1664,H=600,L=14;
+const c=document.getElementById(&#x27;c&#x27;),x=c.getContext(&#x27;2d&#x27;);let k=1,ox=0,oy=0,t0=null;
+function fit(){const d=Math.max(2,devicePixelRatio||1);c.width=Math.round(innerWidth*d);c.height=Math.round(innerHeight*d);k=Math.min(c.width/W,c.height/H);ox=(c.width-W*k)/2;oy=(c.height-H*k)/2}
+addEventListener(&#x27;resize&#x27;,fit);fit();
+const F=&#x27;&quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif&#x27;,FM=&#x27;Menlo,Consolas,&quot;Courier New&quot;,monospace&#x27;;
+const C={bg:&#x27;#FCFBF8&#x27;,ink:&#x27;#1B1F2A&#x27;,soft:&#x27;#4A5160&#x27;,mute:&#x27;#8A8F9A&#x27;,line:&#x27;#DCD8CE&#x27;,card:&#x27;#F3F1EC&#x27;,vio:&#x27;#5B3FA8&#x27;,amb:&#x27;#B45309&#x27;,wh:&#x27;#FCFBF8&#x27;};
+const cl=v=&gt;v &lt; 0?0:(v &gt; 1?1:v),sg=(t,a,b)=&gt;cl((t-a)/(b-a)),eo=p=&gt;1-Math.pow(1-p,3),pu=(t,a,b)=&gt;Math.sin(Math.PI*sg(t,a,b));
+let BA=1;
+function R(X,Y,w,h,r,f,s,lw){x.beginPath();x.roundRect(X,Y,w,h,r);if(f){x.fillStyle=f;x.fill()}if(s){x.strokeStyle=s;x.lineWidth=lw||2;x.stroke()}}
+function T(s,X,Y,o){o=o||{};x.font=(o.w||500)+&#x27; &#x27;+(o.z||28)+&#x27;px &#x27;+(o.f||F);x.fillStyle=o.c||C.ink;x.textAlign=o.a||&#x27;left&#x27;;x.textBaseline=&#x27;middle&#x27;;x.globalAlpha=BA*(o.al==null?1:o.al);x.fillText(s,X,Y);x.globalAlpha=BA}
+function G(a,fn){if(a &lt;= 0.001)return;const o=BA;BA=o*a;x.globalAlpha=BA;fn();BA=o;x.globalAlpha=BA}
+let s=11;const rnd=()=&gt;{s=(s*1664525+1013904223)%4294967296;return s/4294967296},gs=()=&gt;Math.sqrt(-2*Math.log(rnd()+1e-9))*Math.cos(6.2832*rnd());
+const N=90,P=[];for(let i=0;i &lt; N;i++){const u=gs(),v=gs();P.push({m:[0.8*u+0.32*(u*u-1),0.62*u+0.5*v+0.18*(v*v-1)],r:[0.22+0.18*rnd(),0.22+0.18*rnd()]})}
+let m1=0,m2=0;P.forEach(p=&gt;{m1+=p.m[0];m2+=p.m[1]});m1/=N;m2/=N;let a=0,b=0,d=0;P.forEach(p=&gt;{const u=p.m[0]-m1,v=p.m[1]-m2;a+=u*u;b+=u*v;d+=v*v});a/=N;b/=N;d/=N;
+const CV=[[a,b],[b,d]],rho=b/Math.sqrt(a*d);
+const CXp=380,CYp=318,S=78;const px=v=&gt;CXp+S*v,py=v=&gt;CYp-S*v;
+function ell(cx,cy,rx,ry,rot,f,st,lw,dash){x.save();x.translate(cx,cy);x.rotate(rot);x.beginPath();x.ellipse(0,0,Math.max(1,rx),Math.max(1,ry),0,0,6.2832);if(f){x.fillStyle=f;x.fill()}if(st){x.setLineDash(dash||[]);x.strokeStyle=st;x.lineWidth=lw||2;x.stroke()}x.restore()}
+function hist(X,Y,w,h,ix,lab){R(X,Y,w,h,10,C.card,C.line,2);const B=14,cnt=new Array(B).fill(0);P.forEach(p=&gt;{const q=Math.floor((p.m[ix]+3)/6*B);if(q &gt;= 0&amp;&amp;q &lt; B)cnt[q]++});
+ const mxc=Math.max(...cnt),bw=(w-40)/B,base=Y+h-34;cnt.forEach((n,i)=&gt;{const hh=(h-70)*n/mxc;x.fillStyle=&#x27;rgba(91,63,168,0.55)&#x27;;x.fillRect(X+20+i*bw+2,base-hh,bw-4,hh)});
+ x.strokeStyle=C.amb;x.lineWidth=3;x.setLineDash([8,6]);x.beginPath();for(let i=0;i &lt;= 60;i++){const z=-3+6*i/60,g=Math.exp(-z*z/2)/2.5066*N*6/B;const yy=base-(h-70)*g/mxc;const xx=X+20+(w-40)*i/60;if(i===0)x.moveTo(xx,yy);else x.lineTo(xx,yy)}x.stroke();x.setLineDash([]);
+ T(lab,X+20,Y+20,{z:24,w:700,c:C.soft})}
+function draw(t){BA=1;x.globalAlpha=1;R(1,1,W-2,H-2,22,C.bg,C.line,2);
+ const GA=t &lt; 0.4?sg(t,0,0.4):1-sg(t,L-0.6,L);
+ G(GA,()=&gt;{
+  R(CXp-250,CYp-250,500,500,14,C.card,C.line,2);x.strokeStyle=C.line;x.lineWidth=2;x.beginPath();x.moveTo(CXp-240,CYp);x.lineTo(CXp+240,CYp);x.moveTo(CXp,CYp-240);x.lineTo(CXp,CYp+240);x.stroke();
+  T(&#x27;z1&#x27;,CXp+236,CYp+22,{z:24,c:C.mute,a:&#x27;right&#x27;});T(&#x27;z2&#x27;,CXp+12,CYp-226,{z:24,c:C.mute});
+  ell(CXp,CYp,2*S,2*S,0,null,C.amb,3,[10,8]);T(&#x27;prior N(0, I)&#x27;,CXp-236,CYp-226,{z:24,w:700,c:C.amb});
+  x.save();x.beginPath();x.rect(CXp-248,CYp-248,496,496);x.clip();P.forEach((p,i)=&gt;{const ti=0.5+i*0.05;if(t &lt; ti)return;const e=pu(t,ti,ti+1.0)*0.32;if(e &gt; 0.01)G(e,()=&gt;ell(px(p.m[0]),py(p.m[1]),p.r[0]*S*2,p.r[1]*S*2,0,&#x27;rgba(91,63,168,0.35)&#x27;,C.vio,1.5));
+   G(sg(t,ti+0.3,ti+0.6),()=&gt;{x.fillStyle=C.vio;x.beginPath();x.arc(px(p.m[0]),py(p.m[1]),5,0,6.2832);x.fill()})});x.restore();
+  G(sg(t,0.5,0.9)*(1-sg(t,5.0,5.4)),()=&gt;{T(&#x27;each input gets its own posterior q(z | x);&#x27;,W-40,60,{z:28,w:700,a:&#x27;right&#x27;});T(&#x27;a KL term pulls each one toward the prior&#x27;,W-40,98,{z:28,c:C.soft,a:&#x27;right&#x27;})});
+  const ag=eo(sg(t,5.4,6.2));if(ag &gt; 0){const tr=a+d,dt=a*d-b*b,l1=tr/2+Math.sqrt(tr*tr/4-dt),l2=tr/2-Math.sqrt(tr*tr/4-dt),ang=Math.atan2(l1-a,b);
+   G(ag,()=&gt;{ell(px(m1),py(m2),2*S*Math.sqrt(l1),2*S*Math.sqrt(l2),-ang,null,C.vio,4);T(&#x27;aggregate of all codes&#x27;,W-40,60,{z:28,w:700,a:&#x27;right&#x27;,c:C.vio});T(&#x27;tilted and skewed, unlike the prior&#x27;,W-40,98,{z:28,c:C.soft,a:&#x27;right&#x27;})})}
+  G(eo(sg(t,6.6,7.2)),()=&gt;{const X=720,Y=150;T(&#x27;covariance over the data&#x27;,X,Y,{z:24,w:700,c:C.soft});
+   for(let i=0;i &lt; 2;i++)for(let j=0;j &lt; 2;j++){const v=CV[i][j],q=Math.min(1,Math.abs(v)/1.0);R(X+i*0+j*118,Y+24+i*92,108,84,10,&#x27;rgba(91,63,168,&#x27;+(0.08+0.8*q).toFixed(3)+&#x27;)&#x27;);T(v.toFixed(2),X+j*118+54,Y+66+i*92,{z:28,w:700,f:FM,a:&#x27;center&#x27;,c:q &gt; 0.55?C.wh:C.ink})}
+   T(&#x27;target: 1 on the diagonal, 0 off it&#x27;,X,Y+228,{z:24,c:C.amb,w:600});T(&#x27;correlation &#x27;+rho.toFixed(2),X,Y+264,{z:26,w:700,c:C.vio})});
+  G(eo(sg(t,7.4,8.0)),()=&gt;{hist(1100,140,520,190,0,&#x27;marginal of z1&#x27;);hist(1100,350,520,190,1,&#x27;marginal of z2&#x27;)});
+  G(sg(t,8.4,8.8),()=&gt;{T(&#x27;bars: the codes · dashed: the Gaussian the prior asks for&#x27;,720,568,{z:24,c:C.soft})});
+ })}
+function loop(n){if(t0===null)t0=n;const t=((n-t0)/1000)%L;x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,c.width,c.height);x.setTransform(k,0,0,k,ox,oy);draw(t);requestAnimationFrame(loop)}
+const mm=/t([\d.]+)/.exec(location.hash);if(mm){x.setTransform(k,0,0,k,ox,oy);draw(+mm[1])}else requestAnimationFrame(loop)})();
+&lt;/script&gt;"></iframe>
+<p style="position:absolute;left:128px;bottom:64px;width:1400px;font-size:24px;color:#6B7080">Schematic in two dimensions · the next slide shows the same failure measured on MNIST</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">3</p>
+<img class="freeze" src="assets/263e8d551f467bde5f22a5aebc4101b9.png" alt="Final frame: the aggregate of all codes is tilted and skewed unlike the N(0, I) prior; covariance 0.81, 0.56, 0.56, 0.90, correlation 0.66; marginals of z1 and z2 depart from the Gaussian" style="position:absolute;left:128px;top:300px;width:1664px;height:600px;object-fit:contain">
+</section>
+</div>
+<div class="slide" data-id="evidence">
+<section id="evidence" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">The evidence · MNIST, 12 latent dimensions</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">Only the MMD model matches the prior</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;align-items:center;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:16px">
+<p style="font-size:26px;font-weight:600">Standard VAE</p>
+<img src="assets/f1a9b982b4e7c5ccad1bafa977c36b49.png" alt="Standard VAE latent covariance over MNIST" style="width:280px;height:256px;object-fit:contain">
+<img src="assets/a4bebbc38cb8f6768e4ed5d1dded11c7.png" alt="Standard VAE latent marginal histograms" style="width:280px;height:300px;object-fit:contain">
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;align-items:center;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:16px">
+<p style="font-size:26px;font-weight:600">β-VAE (β = 4)</p>
+<img src="assets/6e99b36c4f260c8ec685953019f6428c.png" alt="beta-VAE latent covariance over MNIST" style="width:280px;height:256px;object-fit:contain">
+<img src="assets/62131cacafc578fcb52ca568bd9291d5.png" alt="beta-VAE latent marginal histograms" style="width:280px;height:300px;object-fit:contain">
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;align-items:center;background:#EEE9F8;border:3px solid #5B3FA8;border-radius:16px;padding:14px">
+<p style="font-size:26px;font-weight:700;color:#5B3FA8">SWAE-MMD (ours)</p>
+<img src="assets/44ec020448f7cf3ef66b8cbe0c129002.png" alt="SWAE-MMD latent covariance over MNIST, diagonal" style="width:280px;height:256px;object-fit:contain">
+<img src="assets/2650a2dc12896218f250a3d2bb090933.png" alt="SWAE-MMD latent marginal histograms, Gaussian" style="width:280px;height:300px;object-fit:contain">
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;align-items:center;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:16px">
+<p style="font-size:26px;font-weight:600">AE + batch KL</p>
+<img src="assets/c5750522a7b636c3b3f8d0a1407d29e0.png" alt="Autoencoder with batch-wise KL: latent covariance over MNIST" style="width:280px;height:256px;object-fit:contain">
+<img src="assets/852af244f3f8066b979dcae96565058a.png" alt="Autoencoder with batch-wise KL: latent marginal histograms" style="width:280px;height:300px;object-fit:contain">
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;align-items:center;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:16px">
+<p style="font-size:26px;font-weight:600">Standard AE</p>
+<img src="assets/c20f1f690524234ab532e38b0c1bc8fa.png" alt="Standard autoencoder latent covariance over MNIST" style="width:280px;height:256px;object-fit:contain">
+<img src="assets/95e0135539d87fd773049825f2c8efce.png" alt="Standard autoencoder latent marginal histograms" style="width:280px;height:300px;object-fit:contain">
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Top: covariance of the latents over the dataset · bottom: their marginals · batch KL fixes two moments, yet its LPS is 0.97</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">4</p>
+</section>
+</div>
+<div class="slide" data-id="lps" data-freeze="1">
+<section id="lps" data-transition="fade" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">Measuring it without labels</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">The Latent Predictability Score</h2>
+<iframe class="emb" sandbox="allow-scripts" title="animation" style="position:absolute;left:128px;top:300px;width:1664px;height:600px;border:0" data-srcdoc="&lt;!doctype html&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;html,body{margin:0;padding:0;overflow:hidden;background:transparent}canvas{position:fixed;left:0;top:0;width:100vw;height:100vh}&lt;/style&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+(()=&gt;{const W=1664,H=600,L=17;
+const c=document.getElementById(&#x27;c&#x27;),x=c.getContext(&#x27;2d&#x27;);let k=1,ox=0,oy=0,t0=null;
+function fit(){const d=Math.max(2,devicePixelRatio||1);c.width=Math.round(innerWidth*d);c.height=Math.round(innerHeight*d);k=Math.min(c.width/W,c.height/H);ox=(c.width-W*k)/2;oy=(c.height-H*k)/2}
+addEventListener(&#x27;resize&#x27;,fit);fit();
+const F=&#x27;&quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif&#x27;,FM=&#x27;Menlo,Consolas,&quot;Courier New&quot;,monospace&#x27;;
+const C={bg:&#x27;#FCFBF8&#x27;,ink:&#x27;#1B1F2A&#x27;,soft:&#x27;#4A5160&#x27;,mute:&#x27;#8A8F9A&#x27;,line:&#x27;#DCD8CE&#x27;,card:&#x27;#F3F1EC&#x27;,vio:&#x27;#5B3FA8&#x27;,amb:&#x27;#B45309&#x27;,wh:&#x27;#FCFBF8&#x27;};
+const cl=v=&gt;v &lt; 0?0:(v &gt; 1?1:v),sg=(t,a,b)=&gt;cl((t-a)/(b-a)),eo=p=&gt;1-Math.pow(1-p,3),pu=(t,a,b)=&gt;Math.sin(Math.PI*sg(t,a,b)),mx=(a,b,p)=&gt;a+(b-a)*p;
+let BA=1;
+function R(X,Y,w,h,r,f,s,lw){x.beginPath();x.roundRect(X,Y,w,h,r);if(f){x.fillStyle=f;x.fill()}if(s){x.strokeStyle=s;x.lineWidth=lw||2;x.stroke()}}
+function T(s,X,Y,o){o=o||{};x.font=(o.w||500)+&#x27; &#x27;+(o.z||28)+&#x27;px &#x27;+(o.f||F);x.fillStyle=o.c||C.ink;x.textAlign=o.a||&#x27;left&#x27;;x.textBaseline=&#x27;middle&#x27;;x.globalAlpha=BA*(o.al==null?1:o.al);x.fillText(s,X,Y);x.globalAlpha=BA}
+function G(a,fn){if(a &lt;= 0.001)return;const o=BA;BA=o*a;x.globalAlpha=BA;fn();BA=o;x.globalAlpha=BA}
+function arrow(x1,y1,x2,y2,col){x.strokeStyle=col;x.fillStyle=col;x.lineWidth=4;x.beginPath();x.moveTo(x1,y1);x.lineTo(x2,y2);x.stroke();const a=Math.atan2(y2-y1,x2-x1);x.beginPath();x.moveTo(x2,y2);x.lineTo(x2-16*Math.cos(a-0.45),y2-16*Math.sin(a-0.45));x.lineTo(x2-16*Math.cos(a+0.45),y2-16*Math.sin(a+0.45));x.closePath();x.fill()}
+let s=5;const rnd=()=&gt;{s=(s*1664525+1013904223)%4294967296;return s/4294967296},gs=()=&gt;Math.sqrt(-2*Math.log(rnd()+1e-9))*Math.cos(6.2832*rnd());
+const NR=10,D=4,V=[];for(let r=0;r &lt; NR;r++){V.push([gs(),gs(),gs(),gs()])}
+const SC=[];for(let i=0;i &lt; 36;i++)SC.push([gs(),gs()]);
+const R1=[0.88,0.79,0.90,0.83],R2=[0.05,0.02,0.06,0.03],A0=1.0,DT=2.2,B0=11.2;
+function phase(t){return t &lt; B0-0.4?0:1}
+function draw(t){BA=1;x.globalAlpha=1;R(1,1,W-2,H-2,22,C.bg,C.line,2);
+ const GA=t &lt; 0.4?sg(t,0,0.4):1-sg(t,L-0.6,L);
+ G(GA,()=&gt;{const ph=phase(t),RR=ph?R2:R1,cur=ph?Math.min(3,Math.floor((t-B0)/0.6)):Math.min(3,Math.floor((t-A0)/DT));
+  const act=t &gt;= A0&amp;&amp;!(ph===0&amp;&amp;t &gt; A0+4*DT-0.2)&amp;&amp;!(ph===1&amp;&amp;t &gt; B0+2.6);
+  T(ph?&#x27;model: SWAE-MMD (ours) · CIFAR-10&#x27;:&#x27;model: β-VAE · CIFAR-10&#x27;,40,44,{z:28,w:700,c:ph?C.vio:C.amb});
+  T(&#x27;encoded latents, one row per input&#x27;,40,96,{z:24,w:700,c:C.soft});
+  for(let j=0;j &lt; D;j++){const X=40+j*92;T(&#x27;z&#x27;+(j+1),X+42,132,{z:26,w:700,c:act&amp;&amp;j===cur?C.amb:C.soft,a:&#x27;center&#x27;});
+   for(let r=0;r &lt; NR;r++){const v=V[r][j],q=cl((v+2.2)/4.4);R(X,150+r*34,84,30,6,&#x27;rgba(91,63,168,&#x27;+(0.12+0.6*q).toFixed(3)+&#x27;)&#x27;)}
+   if(act&amp;&amp;j===cur){R(X-5,145,94,NR*34+10,10,null,C.amb,4)}}
+  const g=act?pu(ph?(t-B0)%0.6:(t-A0)%DT,0.2,ph?0.5:0.9):0;
+  R(470,250,280,120,16,g &gt; 0.02?&#x27;rgba(180,83,9,&#x27;+(0.06+0.2*g).toFixed(3)+&#x27;)&#x27;:C.card,g &gt; 0.02?C.amb:C.line,2);
+  T(&#x27;regressor&#x27;,610,288,{z:30,w:700,a:&#x27;center&#x27;,c:g &gt; 0.3?C.amb:C.ink});T(&#x27;target from the rest&#x27;,610,330,{z:24,a:&#x27;center&#x27;,c:C.soft});
+  arrow(418,310,462,310,C.mute);arrow(758,310,790,310,C.mute);
+  const SX=850,SY=120,SW=330;R(SX,SY,SW,SW,12,C.card,C.line,2);T(&#x27;actual&#x27;,SX+SW/2,SY+SW+26,{z:24,c:C.mute,a:&#x27;center&#x27;});
+  x.save();x.translate(SX-24,SY+SW/2);x.rotate(-Math.PI/2);T(&#x27;predicted&#x27;,0,0,{z:24,c:C.mute,a:&#x27;center&#x27;});x.restore();
+  if(act){const r2=RR[cur],sr=Math.sqrt(r2),st=ph?B0+0.6*cur:A0+DT*cur,pa=sg(t,st+0.5,st+(ph?0.55:1.3));
+   SC.forEach((p,i)=&gt;{if(i/SC.length &gt; pa)return;const ax=p[0],pr=sr*p[0]+Math.sqrt(1-r2)*p[1];x.fillStyle=C.vio;x.beginPath();x.arc(SX+SW/2+ax*52,SY+SW/2-pr*52,6,0,6.2832);x.fill()});
+   G(sg(t,st+(ph?0.4:1.2),st+(ph?0.55:1.5)),()=&gt;T(&#x27;R² = &#x27;+r2.toFixed(2),SX+SW-16,SY+28,{z:28,w:700,f:FM,a:&#x27;right&#x27;,c:C.amb}))}
+  const BX=1240,BY=130,BH=300,bw=70;T(&#x27;R² per dimension&#x27;,BX,BY-34,{z:24,w:700,c:C.soft});
+  x.strokeStyle=C.line;x.lineWidth=2;x.beginPath();x.moveTo(BX,BY+BH);x.lineTo(BX+4*(bw+22),BY+BH);x.stroke();
+  for(let j=0;j &lt; D;j++){const st=A0+DT*j+1.5,stB=B0+0.6*j+0.45;let v=R1[j]*eo(sg(t,st,st+0.5));if(t &gt;= B0-0.4)v=mx(R1[j],R2[j],eo(sg(t,stB,stB+0.4)));
+   const X=BX+j*(bw+22);R(X,BY+BH-BH*v,bw,Math.max(2,BH*v),8,ph?C.vio:C.amb);T(&#x27;z&#x27;+(j+1),X+bw/2,BY+BH+26,{z:24,c:C.soft,a:&#x27;center&#x27;});if(v &gt; 0.005)T(v.toFixed(2),X+bw/2,BY+BH-BH*v-20,{z:24,f:FM,c:C.soft,a:&#x27;center&#x27;})}
+  const la=ph?sg(t,B0+2.6,B0+3.0):sg(t,A0+4*DT,A0+4*DT+0.4),lv=ph?0.04:0.85;
+  G(la*(ph?1:1-sg(t,B0-0.6,B0-0.3)),()=&gt;{const yy=BY+BH-BH*lv;x.strokeStyle=C.ink;x.lineWidth=3;x.setLineDash([10,7]);x.beginPath();x.moveTo(BX-10,yy);x.lineTo(BX+4*(bw+22),yy);x.stroke();x.setLineDash([]);
+   T(&#x27;LPS = mean R² = &#x27;+lv.toFixed(2),W-40,BY+BH+80,{z:30,w:700,a:&#x27;right&#x27;,f:FM,c:ph?C.vio:C.amb})});
+  G(sg(t,A0+4*DT+0.6,A0+4*DT+1.0)*(1-sg(t,B0-0.6,B0-0.3)),()=&gt;T(&#x27;high LPS: each latent is largely predictable from the others&#x27;,40,560,{z:28,c:C.soft}));
+  G(sg(t,B0+3.0,B0+3.4),()=&gt;T(&#x27;LPS near 0: no latent can be predicted from the others&#x27;,40,560,{z:28,c:C.soft}));
+ })}
+function loop(n){if(t0===null)t0=n;const t=((n-t0)/1000)%L;x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,c.width,c.height);x.setTransform(k,0,0,k,ox,oy);draw(t);requestAnimationFrame(loop)}
+const mm=/t([\d.]+)/.exec(location.hash);if(mm){x.setTransform(k,0,0,k,ox,oy);draw(+mm[1])}else requestAnimationFrame(loop)})();
+&lt;/script&gt;"></iframe>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">4 of 64 dimensions shown; per-dimension R² illustrative · LPS values are Table 1’s CIFAR-10 numbers (LightGBM regressor)</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">5</p>
+<img class="freeze" src="assets/c8c13c87787a5ddc52f35ce1f84c714d.png" alt="Final frame: for SWAE-MMD on CIFAR-10 every per-dimension R squared is near zero and LPS = mean R squared = 0.04; no latent can be predicted from the others" style="position:absolute;left:128px;top:300px;width:1664px;height:600px;object-fit:contain">
+</section>
+</div>
+<div class="slide" data-id="lemma">
+<section id="lemma" data-transition="fade" style="background:#5B3FA8;color:#F6F5F1;font-family:'Public Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:40px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#E4DCF7">Why the score is safe to trust</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:80px;font-weight:600;line-height:1.1;color:#F6F5F1;width:1500px">LPS can only underestimate entanglement</h2>
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:36px;line-height:1.4;color:#F6F5F1">R² of any regressor  ≤  η², the share of a latent’s variance the others truly explain</p>
+<p style="font-size:32px;line-height:1.45;color:#E4DCF7;width:1450px">No regressor beats the conditional mean. So an LPS of 0.5 proves that at least half of the latent information is entangled, whatever the ground-truth factors are: a rejection test that needs no labels.</p>
+</section>
+</div>
+<div class="slide" data-id="method">
+<section id="method" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">The fix · SWAE-MMD</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">Match the aggregate posterior to prior samples</h2>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:column;gap:8px;background:#1B1F2A;border-radius:16px;padding:32px 48px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:36px;line-height:1.3;color:#F1EEE6">maximise  E[ log q(x) ]  −  λ · MMD²( q(z), p(z) )</p>
+<p style="font-size:28px;line-height:1.4;color:#BFC3CF">reconstruct the input, and make the distribution of all codes match the prior, using only samples of the prior</p>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;gap:40px;align-items:center">
+<img src="assets/f2ec37da9b8e9a6681aa781795227921.png" alt="Architecture: encoder and decoder with an MSE loss, plus an MMD loss between the latent batch and a batch sampled from the target prior" style="width:1100px;height:472px;object-fit:contain;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<p style="font-size:30px;line-height:1.4">The regularizer acts on the <b>batch</b>, not on each sample: it sees the whole aggregate shape.</p>
+<p style="font-size:30px;line-height:1.4">It needs <b>no density</b> for p(z), only a way to sample it. That is what makes the prior programmable.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1400px;font-size:24px;color:#6B7080">A Wasserstein autoencoder variant (Tolstikhin et al. 2018) used for representation engineering · batch 512, λ = 0.3</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">7</p>
+</section>
+</div>
+<div class="slide" data-id="sculpt" data-freeze="1">
+<section id="sculpt" data-transition="fade" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">Sculpting, one batch at a time</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">MMD pulls the codes onto any prior</h2>
+<iframe class="emb" sandbox="allow-scripts" title="animation" style="position:absolute;left:128px;top:290px;width:1664px;height:620px;border:0" data-srcdoc="&lt;!doctype html&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;html,body{margin:0;padding:0;overflow:hidden;background:transparent}canvas{position:fixed;left:0;top:0;width:100vw;height:100vh}&lt;/style&gt;&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;&lt;script&gt;
+(()=&gt;{const W=1664,H=620,L=18;
+const c=document.getElementById(&#x27;c&#x27;),x=c.getContext(&#x27;2d&#x27;);let k=1,ox=0,oy=0,t0=null;
+function fit(){const d=Math.max(2,devicePixelRatio||1);c.width=Math.round(innerWidth*d);c.height=Math.round(innerHeight*d);k=Math.min(c.width/W,c.height/H);ox=(c.width-W*k)/2;oy=(c.height-H*k)/2}
+addEventListener(&#x27;resize&#x27;,fit);fit();
+const F=&#x27;&quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif&#x27;,FM=&#x27;Menlo,Consolas,&quot;Courier New&quot;,monospace&#x27;;
+const C={bg:&#x27;#FCFBF8&#x27;,ink:&#x27;#1B1F2A&#x27;,soft:&#x27;#4A5160&#x27;,mute:&#x27;#8A8F9A&#x27;,line:&#x27;#DCD8CE&#x27;,card:&#x27;#F3F1EC&#x27;,vio:&#x27;#5B3FA8&#x27;,amb:&#x27;#B45309&#x27;,wh:&#x27;#FCFBF8&#x27;};
+const cl=v=&gt;v &lt; 0?0:(v &gt; 1?1:v),sg=(t,a,b)=&gt;cl((t-a)/(b-a)),eo=p=&gt;1-Math.pow(1-p,3),ei=p=&gt;p &lt; 0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2,mx=(a,b,p)=&gt;a+(b-a)*p,pu=(t,a,b)=&gt;Math.sin(Math.PI*sg(t,a,b));
+let BA=1;
+function R(X,Y,w,h,r,f,s,lw){x.beginPath();x.roundRect(X,Y,w,h,r);if(f){x.fillStyle=f;x.fill()}if(s){x.strokeStyle=s;x.lineWidth=lw||2;x.stroke()}}
+function T(s,X,Y,o){o=o||{};x.font=(o.w||500)+&#x27; &#x27;+(o.z||28)+&#x27;px &#x27;+(o.f||F);x.fillStyle=o.c||C.ink;x.textAlign=o.a||&#x27;left&#x27;;x.textBaseline=&#x27;middle&#x27;;x.globalAlpha=BA*(o.al==null?1:o.al);x.fillText(s,X,Y);x.globalAlpha=BA}
+function G(a,fn){if(a &lt;= 0.001)return;const o=BA;BA=o*a;x.globalAlpha=BA;fn();BA=o;x.globalAlpha=BA}
+let s=3;const rnd=()=&gt;{s=(s*1664525+1013904223)%4294967296;return s/4294967296},gs=()=&gt;Math.sqrt(-2*Math.log(rnd()+1e-9))*Math.cos(6.2832*rnd());
+const erf=z=&gt;{const t=1/(1+0.3275911*Math.abs(z)),y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-z*z);return z &gt;= 0?y:-y};
+const U=z=&gt;Math.sqrt(3)*erf(z/Math.SQRT2);
+const N=100,Z=[],PG=[],PU=[];for(let i=0;i &lt; N;i++){const g=[gs(),gs()];Z.push({g:g,a:[0.75*g[0]+0.35*(g[0]*g[0]-1)+0.6,0.7*g[0]+0.45*g[1]+0.25*(g[1]*g[1]-1)-0.4],u:[U(g[0]),U(g[1])]})}
+for(let i=0;i &lt; N;i++){PG.push([gs(),gs()]);PU.push([(2*rnd()-1)*Math.sqrt(3),(2*rnd()-1)*Math.sqrt(3)])}
+function mmd(A,B){const kf=(p,q)=&gt;{const dx=p[0]-q[0],dy=p[1]-q[1];return Math.exp(-(dx*dx+dy*dy)/2)};let aa=0,bb=0,ab=0;
+ for(let i=0;i &lt; N;i++)for(let j=0;j &lt; N;j++){aa+=kf(A[i],A[j]);bb+=kf(B[i],B[j]);ab+=kf(A[i],B[j])}return(aa+bb-2*ab)/(N*N)}
+function corr(A){let m0=0,m1=0;A.forEach(p=&gt;{m0+=p[0];m1+=p[1]});m0/=N;m1/=N;let a=0,b=0,d=0;A.forEach(p=&gt;{const u=p[0]-m0,v=p[1]-m1;a+=u*u;b+=u*v;d+=v*v});return b/Math.sqrt(a*d)}
+const S=66;
+function plane(cx,cy,pts,col,lab,sub){R(cx-215,cy-215,430,430,14,C.card,C.line,2);x.strokeStyle=C.line;x.lineWidth=2;x.beginPath();x.moveTo(cx-205,cy);x.lineTo(cx+205,cy);x.moveTo(cx,cy-205);x.lineTo(cx,cy+205);x.stroke();
+ x.save();x.beginPath();x.rect(cx-213,cy-213,426,426);x.clip();x.fillStyle=col;pts.forEach(p=&gt;{x.beginPath();x.arc(cx+S*p[0],cy-S*p[1],5.5,0,6.2832);x.fill()});x.restore();T(lab,cx,cy+246,{z:26,w:700,a:&#x27;center&#x27;});T(sub,cx,cy+280,{z:24,a:&#x27;center&#x27;,c:C.soft})}
+function draw(t){BA=1;x.globalAlpha=1;R(1,1,W-2,H-2,22,C.bg,C.line,2);
+ const GA=t &lt; 0.4?sg(t,0,0.4):1-sg(t,L-0.6,L);
+ G(GA,()=&gt;{const p1=ei(sg(t,1.2,6.8)),p2=ei(sg(t,9.4,14.4)),uni=t &gt;= 8.6;
+  const A=Z.map(z=&gt;p2 &gt; 0?[mx(z.g[0],z.u[0],p2),mx(z.g[1],z.u[1],p2)]:[mx(z.a[0],z.g[0],p1),mx(z.a[1],z.g[1],p1)]);
+  const Pp=t &lt; 8.7?PG:PU;
+  T(&#x27;loss = reconstruction error + λ · MMD²( latent batch, prior batch )&#x27;,W/2,44,{z:28,w:700,a:&#x27;center&#x27;});
+  plane(300,320,A,C.vio,&#x27;latent batch z = encoder(x)&#x27;,&#x27;what the encoder produces&#x27;);
+  G(1-pu(t,8.4,9.0)*0.9,()=&gt;plane(1364,320,Pp,C.amb,&#x27;prior batch z′ ~ p(z)&#x27;,uni?&#x27;prior: uniform&#x27;:&#x27;prior: Gaussian N(0, I)&#x27;));
+  const v=mmd(A,Pp),r=corr(A);
+  T(&#x27;MMD²&#x27;,832,150,{z:26,w:700,a:&#x27;center&#x27;,c:C.soft});T(v.toFixed(3),832,204,{z:56,w:700,f:FM,a:&#x27;center&#x27;,c:C.vio});
+  T(&#x27;correlation(z1, z2)&#x27;,832,290,{z:26,w:700,a:&#x27;center&#x27;,c:C.soft});T(r.toFixed(2),832,338,{z:44,w:700,f:FM,a:&#x27;center&#x27;,c:C.ink});
+  const tr=t &lt; 8.4?sg(t,1.2,6.8):sg(t,9.4,14.4);R(652,410,360,16,8,&#x27;#E6E2D8&#x27;);R(652,410,Math.max(16,360*tr),16,8,C.vio);
+  T(t &lt; 1.2||(t &gt; 6.8&amp;&amp;t &lt; 9.4)||t &gt; 14.4?&#x27;&#x27;:&#x27;training steps&#x27;,832,452,{z:24,a:&#x27;center&#x27;,c:C.mute});
+  G(sg(t,6.9,7.3)*(1-sg(t,8.2,8.5)),()=&gt;T(&#x27;matched: no correlation, Gaussian marginals&#x27;,832,500,{z:26,w:700,a:&#x27;center&#x27;,c:C.vio}));
+  G(sg(t,8.6,9.0)*(1-sg(t,9.6,9.9)),()=&gt;T(&#x27;swap the prior: just sample a different p(z)&#x27;,832,500,{z:26,w:700,a:&#x27;center&#x27;,c:C.amb}));
+  G(sg(t,14.5,14.9),()=&gt;T(&#x27;same loss, any prior you can sample from&#x27;,832,500,{z:26,w:700,a:&#x27;center&#x27;,c:C.vio}));
+ })}
+function loop(n){if(t0===null)t0=n;const t=((n-t0)/1000)%L;x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,c.width,c.height);x.setTransform(k,0,0,k,ox,oy);draw(t);requestAnimationFrame(loop)}
+const mm=/t([\d.]+)/.exec(location.hash);if(mm){x.setTransform(k,0,0,k,ox,oy);draw(+mm[1])}else requestAnimationFrame(loop)})();
+&lt;/script&gt;"></iframe>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Two latent dimensions, schematic training · MMD² and the correlation are computed live from the points shown (Gaussian kernel)</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">8</p>
+<img class="freeze" src="assets/1498051a15dcffa88976b5dfa5ae93eb.png" alt="Final frame: after swapping to a uniform prior the latent batch matches it, MMD squared 0.014 and correlation -0.03; same loss, any prior you can sample from" style="position:absolute;left:128px;top:290px;width:1664px;height:620px;object-fit:contain">
+</section>
+</div>
+<div class="slide" data-id="results">
+<section id="results" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">Results · 8 datasets</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">70% less entanglement than the next best method</h2>
+<p style="font-size:28px;line-height:1.4;color:#4A5160">LPS (mean R², lower = more independent); latent size in brackets</p>
+<div style="flex:1"></div>
+<table style="font-size:26px;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif">
+<tr><th style="width:20%">model</th><th style="width:10%;text-align:right">ImageNet [64]</th><th style="width:10%;text-align:right">CIFAR-10 [64]</th><th style="width:10%;text-align:right">MNIST [12]</th><th style="width:10%;text-align:right">dSprites [5]</th><th style="width:10%;text-align:right">XY [2]</th><th style="width:10%;text-align:right">XYC [3]</th><th style="width:10%;text-align:right">XYCS [4]</th><th style="width:10%;text-align:right">CelebA [32]</th></tr>
+<tr style="background:#EEE9F8"><td><b>SWAE-MMD (ours)</b></td><td style="text-align:right"><b>0.03</b></td><td style="text-align:right"><b>0.04</b></td><td style="text-align:right"><b>0.22</b></td><td style="text-align:right"><b>0.04</b></td><td style="text-align:right">−0.05</td><td style="text-align:right"><b>−0.01</b></td><td style="text-align:right"><b>0.11</b></td><td style="text-align:right">0.08</td></tr>
+<tr><td>FactorVAE (γ = 10)</td><td style="text-align:right">0.44</td><td style="text-align:right">0.63</td><td style="text-align:right">0.27</td><td style="text-align:right">0.08</td><td style="text-align:right">−0.04</td><td style="text-align:right">0.00</td><td style="text-align:right">0.17</td><td style="text-align:right"><b>0.07</b></td></tr>
+<tr><td>NashAE</td><td style="text-align:right">0.56</td><td style="text-align:right">0.17</td><td style="text-align:right"><b>0.22</b></td><td style="text-align:right">0.10</td><td style="text-align:right"><b>−0.07</b></td><td style="text-align:right">0.14</td><td style="text-align:right">0.37</td><td style="text-align:right">0.36</td></tr>
+<tr><td>β-TCVAE (β = 4)</td><td style="text-align:right">0.79</td><td style="text-align:right">0.89</td><td style="text-align:right">0.84</td><td style="text-align:right">0.22</td><td style="text-align:right">−0.04</td><td style="text-align:right"><b>−0.01</b></td><td style="text-align:right">0.17</td><td style="text-align:right">0.59</td></tr>
+<tr><td>β-VAE (β = 4)</td><td style="text-align:right">0.73</td><td style="text-align:right">0.85</td><td style="text-align:right">0.90</td><td style="text-align:right">0.52</td><td style="text-align:right">−0.05</td><td style="text-align:right">0.00</td><td style="text-align:right">0.28</td><td style="text-align:right">0.53</td></tr>
+<tr><td>DGAE</td><td style="text-align:right">0.77</td><td style="text-align:right">0.69</td><td style="text-align:right">0.63</td><td style="text-align:right">0.56</td><td style="text-align:right">0.25</td><td style="text-align:right">0.50</td><td style="text-align:right">0.59</td><td style="text-align:right">0.48</td></tr>
+</table>
+<div style="flex:1"></div>
+<p style="font-size:30px;line-height:1.4;width:1500px">Averaged over the 8 datasets, LPS falls by 70% against FactorVAE, with reconstruction as good or better (CIFAR-10: −15.61 dB NMSE vs −12.49 dB).</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Table 1 of the paper · bold = best in column · R² slightly below 0 on held-out data means nothing is predictable</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">9</p>
+</section>
+</div>
+<div class="slide" data-id="scaling">
+<section id="scaling" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">Results · CIFAR-10</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">Independence holds as the latent space grows</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:48px;align-items:center">
+<img src="assets/cdba321395bd7ee3125b218ae89a08b0.png" alt="LPS against latent dimension 32 to 96 on CIFAR-10: AE-MMD-Gaussian stays near 0.1 while the baselines rise toward 0.6 to 0.9" style="width:940px;height:620px;object-fit:contain;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px">
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2">Flat in the latent size</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5160">From 32 to 96 dimensions the MMD model stays low, at about 0.1 or below, while most baselines grow more entangled.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2">Insensitive to its knobs</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5160">Batch 64 to 2048, λ from 0.1 to 5, 1 to 5 kernel bandwidths: only small changes in LPS and reconstruction.</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">LPS with a LightGBM regressor; lower is better · ablations in the paper’s appendix</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">10</p>
+</section>
+</div>
+<div class="slide" data-id="align">
+<section id="align" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">Programmable prior 1 · semantic alignment</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">A few pseudo-labels lock latents to real factors</h2>
+<p style="font-size:28px;line-height:1.4;color:#4A5160;width:1600px">The prior becomes a joint over (z, f(u)) whose first k latents equal the pseudo-labels; MMD on the joint ties those latents to the labels and keeps the rest independent.</p>
+<div style="flex:1"></div>
+<div style="display:flex;gap:32px;align-items:flex-end">
+<div style="display:flex;flex-direction:column;gap:8px;align-items:center">
+<p style="font-size:26px;font-weight:600">target joint</p>
+<img src="assets/601a017b2382dcd189b401f364f52139.png" alt="Target joint covariance of latents and two pseudo-labels on dSprites" style="width:420px;height:386px;object-fit:contain;background:#FCFBF8;border:1px solid #E2DED4;border-radius:12px">
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;align-items:center">
+<p style="font-size:26px;font-weight:600">learned joint</p>
+<img src="assets/17138f465e4aab5f9c3639a51753a5da.png" alt="Learned joint covariance of latents and two pseudo-labels on dSprites, matching the target" style="width:420px;height:386px;object-fit:contain;background:#FCFBF8;border:1px solid #E2DED4;border-radius:12px">
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;align-items:center">
+<p style="font-size:26px;font-weight:600">DCI disentanglement vs pseudo-labels aligned</p>
+<img src="assets/7cc68d6a08c04c32bbd5be1b8890cad0.png" alt="DCI score rising from about 0.2 with one pseudo-label to about 0.7 with four or five, for Gaussian and uniform priors" style="width:600px;height:386px;object-fit:contain;background:#FCFBF8;border:1px solid #E2DED4;border-radius:12px">
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">dSprites · DCI peaks at 3 of 5 factors (uniform prior, orange) and 4 of 5 (Gaussian, blue); reported Ada-GVAE and Ada-ML-VAE stay below 0.5</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">11</p>
+</section>
+</div>
+<div class="slide" data-id="quantize">
+<section id="quantize" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">Programmable prior 2 · compression</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">Shape the codes to fit the quantizer</h2>
+<p style="font-size:28px;line-height:1.4;color:#4A5160;width:1600px">Train with the quantizer in the loop and a prior equal to the distribution the quantizer assumes, Gaussian or uniform.</p>
+<div style="flex:1"></div>
+<div style="display:flex;gap:40px;align-items:flex-end">
+<div style="display:flex;flex-direction:column;gap:8px">
+<p style="font-size:26px;font-weight:600">Gaussian quantizer · CIFAR-10</p>
+<img src="assets/182aaee5a6ba95723b4f150a90729b34.png" alt="Reconstruction NMSE against bit rate with a Gaussian quantizer on CIFAR-10: the MMD-Gaussian model is several dB lower than Beta-VAE, Standard VAE and Standard AE" style="width:770px;height:430px;object-fit:contain;background:#FCFBF8;border:1px solid #E2DED4;border-radius:12px">
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<p style="font-size:26px;font-weight:600">Uniform quantizer · CIFAR-10</p>
+<img src="assets/4784e0df1c00915531a59666b6de32a3.png" alt="Reconstruction NMSE against bit rate with a uniform quantizer on CIFAR-10: the MMD model in green is several dB below the baseline" style="width:546px;height:430px;object-fit:contain;background:#FCFBF8;border:1px solid #E2DED4;border-radius:12px">
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="font-size:30px;line-height:1.4"><b>2–7 dB lower reconstruction error</b> at 2 to 8 bits per dimension, with no post-training vector quantization or entropy coding.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Reconstruction NMSE in dB, lower is better · green: the MMD model matched to the quantizer</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">12</p>
+</section>
+</div>
+<div class="slide" data-id="copy">
+<section id="copy" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">Programmable prior 3 · any distribution you can sample</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">MMD can copy another model’s latent space</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:64px;align-items:center">
+<div style="width:560px;display:flex;flex-direction:column;gap:8px;align-items:center">
+<p style="font-size:28px;font-weight:600">teacher: a standard AE’s codes, used as the prior</p>
+<img src="assets/35d35ffd861f2cd6a0b4f0f07c841496.png" alt="Latent covariance of a standard autoencoder on MNIST, entangled" style="width:560px;height:510px;object-fit:contain;background:#FCFBF8;border:1px solid #E2DED4;border-radius:12px">
+</div>
+<div style="width:560px;display:flex;flex-direction:column;gap:8px;align-items:center">
+<p style="font-size:28px;font-weight:600">student: trained with MMD to match them</p>
+<img src="assets/e1ff98afb59e625d270cfee7b97d45c9.png" alt="Latent covariance of the MMD student on MNIST, nearly identical to the teacher" style="width:560px;height:510px;object-fit:contain;background:#FCFBF8;border:1px solid #E2DED4;border-radius:12px">
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px">
+<p style="font-size:30px;line-height:1.4">An entangled, co-dependent geometry that no closed-form KL target could express.</p>
+<p style="font-size:30px;line-height:1.4;color:#4A5160">Covariance and marginals come out nearly identical.</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">MNIST, latent covariance over the dataset · paper appendix, latent copying experiment</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">13</p>
+</section>
+</div>
+<div class="slide" data-id="close">
+<section id="close" data-transition="fade" style="background:#1B1F2A;color:#F1EEE6;font-family:'Public Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:space-between">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B9A6F0">Takeaways</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:64px;font-weight:600;line-height:1.15;color:#F1EEE6">The prior is an engineering tool, not a fixed assumption</h2>
+</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:2px solid #B9A6F0;padding:28px 0px 0px 0px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#F1EEE6">A label-free test</h3>
+<p style="font-size:28px;line-height:1.4;color:#BFC3CF">LPS lower-bounds entanglement and exposes the VAE-style failure.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:2px solid #B9A6F0;padding:28px 0px 0px 0px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#F1EEE6">A regularizer that works</h3>
+<p style="font-size:28px;line-height:1.4;color:#BFC3CF">MMD on the aggregate posterior: 70% less entanglement, reconstruction kept.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:2px solid #B9A6F0;padding:28px 0px 0px 0px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#F1EEE6">One loss, many priors</h3>
+<p style="font-size:28px;line-height:1.4;color:#BFC3CF">Semantic alignment, quantizer matching and latent copying.</p>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:28px;color:#F1EEE6">arxiv.org/abs/2510.11953</p>
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:28px;color:#F1EEE6">github.com/Quentin-Fruytier/Sculpting-Latent-Spaces-With-MMD</p>
+<p style="font-size:28px;color:#BFC3CF">Work done at InterDigital AI Lab with the University of Texas at Austin · thank you</p>
+</div>
+</section>
+</div>
+</div></div>
+<div id="bar"><a href="../../">Home</a> <a href="https://arxiv.org/abs/2510.11953">Paper</a> <a href="Sculpting_SDM2026_slides.pdf" download>PDF</a><span class="sep"></span>
+<button id="prev" aria-label="Previous slide">&#9664;</button><span id="count"></span><button id="next" aria-label="Next slide">&#9654;</button>
+<button id="pause">Pause</button><button id="fs">Full screen</button>
+<span id="help">&larr; &rarr; to move &middot; P to pause on the final frame &middot; F full screen</span></div>
+<script>
+(()=>{
+const S=[...document.querySelectorAll('.slide')],stage=document.getElementById('stage'),
+ count=document.getElementById('count'),pb=document.getElementById('pause'),
+ isStatic=new URLSearchParams(location.search).has('static');
+if(isStatic)document.body.classList.add('static');
+let cur=-1;
+function fit(){const k=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform='scale('+k+')'}
+addEventListener('resize',fit);fit();
+function load(sl){sl.querySelectorAll('iframe.emb').forEach(f=>{f.srcdoc=f.dataset.srcdoc});
+ sl.querySelectorAll('img').forEach(i=>{if(/\.gif$/i.test(i.getAttribute('src'))){const s=i.getAttribute('src');i.src='';i.src=s}})}
+function unload(sl){sl.querySelectorAll('iframe.emb').forEach(f=>{f.removeAttribute('srcdoc');f.src='about:blank'});sl.classList.remove('frozen')}
+function freeze(on){const sl=S[cur];if(!sl||!sl.dataset.freeze)return;
+ if(on===undefined)on=!sl.classList.contains('frozen');
+ if(on)sl.classList.add('frozen');else{sl.classList.remove('frozen');unload(sl);load(sl)}
+ ui()}
+function ui(){const sl=S[cur];count.textContent=(cur+1)+' / '+S.length;
+ document.getElementById('prev').disabled=cur<=0;document.getElementById('next').disabled=cur>=S.length-1;
+ pb.disabled=!(sl&&sl.dataset.freeze);pb.textContent=sl&&sl.classList.contains('frozen')?'Play':'Pause'}
+function go(n,fromHash){n=Math.max(0,Math.min(S.length-1,n));if(n===cur)return;
+ if(cur>=0){S[cur].classList.remove('on');unload(S[cur])}
+ cur=n;S[cur].classList.add('on');
+ if(isStatic){if(S[cur].dataset.freeze)S[cur].classList.add('frozen');else load(S[cur])}else load(S[cur]);
+ if(!fromHash)history.replaceState(null,'','#'+(cur+1));ui()}
+const fromHash=()=>{const m=/^#(\d+)/.exec(location.hash);return m?+m[1]-1:0};
+addEventListener('hashchange',()=>go(fromHash(),true));
+document.getElementById('prev').onclick=()=>go(cur-1);document.getElementById('next').onclick=()=>go(cur+1);
+pb.onclick=()=>freeze();
+const fsb=document.getElementById('fs');fsb.onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()};
+addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey)return;const k=e.key;
+ if(['ArrowRight','ArrowDown','PageDown',' ','Enter','n'].includes(k)){go(cur+1);e.preventDefault()}
+ else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){go(cur-1);e.preventDefault()}
+ else if(k==='Home')go(0);else if(k==='End')go(S.length-1);
+ else if(k==='p'||k==='P'||k==='k'||k==='.')freeze();
+ else if(k==='f'||k==='F')fsb.onclick()});
+let tx=null;addEventListener('touchstart',e=>{tx=e.touches[0].clientX;show()},{passive:true});
+addEventListener('touchend',e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)go(cur+(dx<0?1:-1));tx=null},{passive:true});
+let hide=null;function show(){document.body.classList.add('ui');clearTimeout(hide);hide=setTimeout(()=>document.body.classList.remove('ui'),2600)}
+addEventListener('mousemove',show);
+go(fromHash(),true);if(!isStatic)show();
+})();
+</script>
+</body>
+</html>
