@@ -24,8 +24,8 @@ html,body{margin:0;height:100%;background:#0E1116;overflow:hidden;-webkit-font-s
 .slide section th,.slide section td{padding:.35em .6em;border:1px solid rgba(0,0,0,.14);text-align:left}
 .slide section th{font-weight:600}
 iframe.emb{display:block;background:transparent}
-img.freeze{display:none}
-.slide.frozen img.freeze{display:block}
+.slide section img.freeze{display:none}
+.slide.frozen section img.freeze{display:block}
 #bar{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;
  padding:12px 12px 14px;font:14px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;color:#D5DBE1;
  background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.6));opacity:0;transition:opacity .3s;pointer-events:none}
@@ -37,7 +37,7 @@ body.ui #bar{opacity:1;pointer-events:auto}
 #count{min-width:64px;text-align:center;font-variant-numeric:tabular-nums}
 #help{opacity:.7}
 body.static #bar{display:none}
-body.static .slide{transition:none}
+body.static .slide,body.noanim .slide{transition:none}
 @media (max-width:700px){#help{display:none}}
 </style>
 </head>
@@ -490,7 +490,8 @@ let tx=null;addEventListener('touchstart',e=>{tx=e.touches[0].clientX;show()},{p
 addEventListener('touchend',e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)go(cur+(dx<0?1:-1));tx=null},{passive:true});
 let hide=null;function show(){document.body.classList.add('ui');clearTimeout(hide);hide=setTimeout(()=>document.body.classList.remove('ui'),2600)}
 addEventListener('mousemove',show);
-go(fromHash(),true);if(!isStatic)show();
+document.body.classList.add('noanim');go(fromHash(),true);if(!isStatic)show();
+requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.remove('noanim')));
 })();
 </script>
 </body>
