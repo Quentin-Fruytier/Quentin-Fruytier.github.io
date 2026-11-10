@@ -1,17 +1,13 @@
 ---
 title: "Progress on New Projects I Am Working On"
 date: 2026-11-09
-summary: "Two projects in progress, and why I think they matter: finding which retrieved sources an answer actually used, in one forward pass instead of hundreds, and making diffusion language models generate faster without changing what they write. Slides for both."
-image: /images/progress-nov2026-cover.jpg
+summary: "Two projects in progress, and why I think they matter: finding which retrieved sources an answer actually used, in one forward pass instead of hundreds, and making diffusion language models generate faster without changing what they write."
 tags: [Diffusion LMs, Attribution]
 ---
 
-[Slides: progress update (attribution and Re-Cal)]({{ '/talks/progress-nov2026/' | relative_url }}) &middot;
-[Slides: decoding along a trajectory]({{ '/talks/decoding-trajectory/' | relative_url }})
-
-These are two projects I am in the middle of. The methods are still moving and every number in the
-slides is preliminary, so this post is not a results write-up. It is about why I think these two
-problems are worth working on. The slides have the details.
+These are two projects I am in the middle of. The methods are still moving and every number here is
+preliminary, so this post is not a results write-up. It is about why I think these two
+problems are worth working on.
 
 ## Which sources did the answer actually use?
 
@@ -72,5 +68,5 @@ follow from that:
 The goal is the same text in fewer forward passes, with a training signal that costs nothing but
 prompts.
 
-Both projects are moving quickly, and the slides will change as the experiments land. If you work on
+Both projects are moving quickly, and the details will change as the experiments land. If you work on
 attribution or on fast decoding for diffusion language models, I would be glad to talk.
