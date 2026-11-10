@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decoding along a trajectory · research update · Quentin Fruytier</title>
+<meta name="description" content="Trajectory tracking, Re-Cal, pruned self-speculation and an edit mode for Nemotron-Labs-Diffusion (November 2026)">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+html,body{margin:0;height:100%;background:#0E1116;overflow:hidden;-webkit-font-smoothing:antialiased}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{position:relative;flex:none;width:1920px;height:1080px;transform-origin:50% 50%}
+.slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .35s ease,visibility 0s linear .35s}
+.slide.on{opacity:1;visibility:visible;transition:opacity .35s ease}
+.slide>section{position:relative;width:1920px;height:1080px;box-sizing:border-box;overflow:hidden;font-size:32px}
+.slide section *{box-sizing:border-box;margin:0}
+.slide section h1{font-size:96px;font-weight:600;line-height:1.1}
+.slide section h2{font-size:64px;font-weight:600;line-height:1.15}
+.slide section h3{font-size:44px;font-weight:600;line-height:1.2}
+.slide section p{line-height:1.4}
+.slide section div:not([style*="display"]){display:flex;flex-direction:column}
+.slide section img{display:block}
+.slide section table{border-collapse:collapse;width:100%}
+.slide section th,.slide section td{padding:.35em .6em;border:1px solid rgba(0,0,0,.14);text-align:left}
+.slide section th{font-weight:600}
+iframe.emb{display:block;background:transparent}
+.slide section img.freeze{display:none}
+.slide.frozen section img.freeze{display:block}
+#bar{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;
+ padding:12px 12px 14px;font:14px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;color:#D5DBE1;
+ background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.6));opacity:0;transition:opacity .3s;pointer-events:none}
+body.ui #bar{opacity:1;pointer-events:auto}
+#bar a,#bar button{color:#fff;background:rgba(255,255,255,.14);border:0;border-radius:6px;padding:7px 11px;font:inherit;cursor:pointer;text-decoration:none}
+#bar a:hover,#bar button:hover{background:rgba(255,255,255,.26)}
+#bar button:disabled{opacity:.35;cursor:default}
+#bar .sep{width:12px}
+#count{min-width:64px;text-align:center;font-variant-numeric:tabular-nums}
+#help{opacity:.7}
+body.static #bar{display:none}
+body.static .slide,body.noanim .slide{transition:none}
+@media (max-width:700px){#help{display:none}}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+<div class="slide" data-id="cover">
+<section id="cover" data-transition="fade" style="background:#14202B;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:space-between">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#F28C5B">Research update · November 2026</p>
+<div style="display:flex;flex-direction:column;gap:32px">
+<h1 style="font-family:'Source Serif 4', Georgia, serif;font-size:104px;font-weight:600;line-height:1.05;color:#F1EEE6;width:1600px">Decoding along a trajectory</h1>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:500;line-height:1.15;color:#F1EEE6;width:1500px">From PIG to Re-Cal, and an edit mode for Nemotron-Labs-Diffusion</h2>
+<p style="font-size:32px;line-height:1.4;color:#B8C2CC;width:1400px">Pick a trusted slow decoder, learn when parallel commits stay on its path, and repair the draft instead of throwing it away.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Quentin Fruytier</p>
+<p style="font-size:28px;color:#B8C2CC">The University of Texas at Austin · PIG with Anton Xue, Sanjay Shakkottai and Sujay Sanghavi</p>
+</div>
+</section>
+</div>
+<div class="slide" data-id="tracking">
+<section id="tracking" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">The paradigm</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Trajectory tracking turns parallel decoding into a supervised problem</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:20px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:36px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">1 · Pick a reference</p>
+<h3 style="font-size:34px;font-weight:600;line-height:1.2">A slow decoder you trust</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">LLaDA: one token per pass, most confident first. Nemotron-Labs-Diffusion: its own AR mode, greedy.</p>
+</div>
+<p style="align-self:center;width:40px;font-size:56px;font-weight:600;text-align:center;color:#6B7480">→</p>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:36px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">2 · Label for free</p>
+<h3 style="font-size:34px;font-weight:600;line-height:1.2">Replay it once</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Every masked slot at every canvas the walk visits gets a label: does the token it would commit now differ from the one the reference ends with?</p>
+</div>
+<p style="align-self:center;width:40px;font-size:56px;font-weight:600;text-align:center;color:#6B7480">→</p>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#F8E3D6;border:2px solid #C2410C;border-radius:16px;padding:35px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">3 · Commit on a budget</p>
+<h3 style="font-size:34px;font-weight:600;line-height:1.2">Stay on its path</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Predict p̂ᵢ ≈ P[slot i disagrees] from the one forward pass, and commit slots while Σ p̂ᵢ ≤ φ.</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="font-size:32px;line-height:1.4;color:#14202B;width:1640px">Self-speculation already tracks the AR trajectory, with an <b>exact</b> verifier, so it can only keep a prefix. A <b>learned</b> verifier scores every slot, so it can keep tokens anywhere in the block.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1300px;font-size:24px;color:#6B7480">PIG: Fruytier, Xue, Shakkottai, Sanghavi · arXiv 2610.17375</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">2</p>
+</section>
+</div>
+<div class="slide" data-id="recal">
+<section id="recal" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Re-Cal · LLaDA-8B-Instruct</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Re-Cal: predict the disagreement directly, then train the model along its own path</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:40px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:12px;background:#14202B;border-radius:16px;padding:36px 40px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:30px;line-height:1.3;color:#F1EEE6">pᵢ = g(pass) ≈ P[xᵢ ≠ sequential final]</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C2CC">One small reader on the pass the model already makes. No pairwise entropy matrix, no calibration table: PIG’s middle step is gone.</p>
+</div>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Rule.</b> Commit the most confident slot, then slots in increasing pᵢ while Σ pᵢ ≤ φ.</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Rounds.</b> Fine-tune the model along the path Re-Cal itself decodes, refit the reader, repeat (on-path certainty forcing).</p>
+</div>
+<div style="width:760px;display:flex;flex-direction:column;gap:18px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:36px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#6B7480">HumanEval · TPF* (higher = faster)</p>
+<div style="display:flex;flex-direction:column;gap:6px"><p style="font-size:26px;color:#4A5560">Fast-dLLM threshold, frozen</p><div style="display:flex;gap:16px;align-items:center"><div style="width:338px;height:28px;background:#B8C2CC;border-radius:4px"></div><p style="font-size:28px;font-weight:600">8.9</p></div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><p style="font-size:26px;color:#4A5560">PIG.INT, frozen</p><div style="display:flex;gap:16px;align-items:center"><div style="width:353px;height:28px;background:#B8C2CC;border-radius:4px"></div><p style="font-size:28px;font-weight:600">9.3</p></div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><p style="font-size:26px;color:#4A5560">Re-Cal, frozen</p><div style="display:flex;gap:16px;align-items:center"><div style="width:425px;height:28px;background:#F28C5B;border-radius:4px"></div><p style="font-size:28px;font-weight:600">11.2</p></div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><p style="font-size:26px;color:#4A5560">Re-Cal after two rounds</p><div style="display:flex;gap:16px;align-items:center"><div style="width:600px;height:28px;background:#C2410C;border-radius:4px"></div><p style="font-size:28px;font-weight:600;color:#C2410C">15.8</p></div></div>
+<p style="font-size:26px;line-height:1.4;color:#0F766E">The parallelism ceiling moves too: 14.0 → 17.1.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">164 problems, blocks of 32 · TPF* = fastest setting with pass@1 ≥ 0.322 · the model’s own sequential pass@1 stays 0.396</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">3</p>
+</section>
+</div>
+<div class="slide" data-id="cpruning">
+<section id="cpruning" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">New direction 1 · Nemotron-Labs-Diffusion-3B self-speculation</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">A PIG-style length adapter prunes quadratic self-speculation to a few candidates</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:40px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;gap:18px"><p style="font-family:'Source Serif 4', Georgia, serif;font-size:40px;font-weight:600;color:#C2410C;width:36px">1</p><p style="flex:1;font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Quadratic self-speculation</b> verifies the draft and, in the same forward, drafts a fresh block after every possible accept length c = 0…31: j + 1 tokens per forward, at about 1,050 input positions.</p></div>
+<div style="display:flex;gap:18px"><p style="font-family:'Source Serif 4', Georgia, serif;font-size:40px;font-weight:600;color:#C2410C;width:36px">2</p><p style="flex:1;font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">A small adapter</b> on the drafter’s hidden states predicts where verification will stop: S(c) = P[accept length ≥ c].</p></div>
+<div style="display:flex;gap:18px"><p style="font-family:'Source Serif 4', Georgia, serif;font-size:40px;font-weight:600;color:#C2410C;width:36px">3</p><p style="flex:1;font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Keep only C blocks</b>, chosen each step to maximise the expected tokens per forward.</p></div>
+</div>
+<div style="width:860px;display:flex;flex-direction:column;gap:16px">
+<table style="font-size:26px;color:#14202B">
+<tr><th style="width:40%;text-align:left">decoder</th><th style="width:20%;text-align:right">positions</th><th style="width:20%;text-align:right">HumanEval</th><th style="width:20%;text-align:right">GSM8K-500</th></tr>
+<tr><td>linear SS (release)</td><td style="text-align:right">2 × 32</td><td style="text-align:right">3.22</td><td style="text-align:right">4.12</td></tr>
+<tr><td>quadratic SS, all 32</td><td style="text-align:right">1,047</td><td style="text-align:right">4.58</td><td style="text-align:right">5.90</td></tr>
+<tr style="background:#F8E3D6"><td><b>pruned, C = 5</b></td><td style="text-align:right"><b>187</b></td><td style="text-align:right"><b>4.27</b></td><td style="text-align:right"><b>5.53</b></td></tr>
+<tr><td>pruned, C = 3</td><td style="text-align:right">121</td><td style="text-align:right">3.98</td><td style="text-align:right">5.16</td></tr>
+</table>
+<p style="font-size:24px;color:#6B7480">Tokens per forward (TPF); every forward counted, recovery passes included</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="font-size:32px;line-height:1.4;color:#14202B;width:1640px"><b>C = 5 is lossless</b> on both sets and gains +32% / +34% TPF: 76–85% of the quadratic gain at 18% of its width.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">Strict verification: every committed token is the AR’s · paired 95% accuracy intervals vs linear SS contain 0</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">4</p>
+</section>
+</div>
+<div class="slide" data-id="edlm">
+<section id="edlm" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">New direction 2 · editing the draft</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Editing is two steps: accept any subset, then re-mask the rest and run again</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:24px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">Step 1 · accept any subset</p>
+<div style="display:flex;gap:10px">
+<p style="font-size:28px;padding:8px 18px;border-radius:8px;background:#D5ECE8;border:2px solid #0F766E">Hopper</p>
+<p style="font-size:28px;padding:8px 18px;border-radius:8px;background:#D5ECE8;border:2px solid #0F766E">and</p>
+<p style="font-size:28px;padding:8px 18px;border-radius:8px;background:#FBE4E1;border:2px solid #B42318;color:#B42318">Hopper</p>
+<p style="font-size:28px;padding:8px 18px;border-radius:8px;background:#D5ECE8;border:2px solid #0F766E">are</p>
+<p style="font-size:28px;padding:8px 18px;border-radius:8px;background:#D5ECE8;border:2px solid #0F766E">fast</p>
+</div>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Keep every slot that agrees with the reference, including the tail <b>past</b> the first wrong one.</p>
+</div>
+<p style="align-self:center;width:40px;font-size:56px;font-weight:600;text-align:center;color:#6B7480">→</p>
+<div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Step 2 · re-mask the rest, forward again</p>
+<div style="display:flex;gap:10px">
+<p style="font-size:28px;padding:8px 18px;border-radius:8px;background:#D5ECE8;border:2px solid #0F766E">Hopper</p>
+<p style="font-size:28px;padding:8px 18px;border-radius:8px;background:#D5ECE8;border:2px solid #0F766E">and</p>
+<p style="font-size:28px;padding:8px 18px;border-radius:8px;background:#F8E3D6;border:2px dashed #C2410C;color:#C2410C"><b>Blackwell</b></p>
+<p style="font-size:28px;padding:8px 18px;border-radius:8px;background:#D5ECE8;border:2px solid #0F766E">are</p>
+<p style="font-size:28px;padding:8px 18px;border-radius:8px;background:#D5ECE8;border:2px solid #0F766E">fast</p>
+</div>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Only the rejected slot is regenerated, now conditioned on the kept tail on both sides.</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;border-top:3px solid #B8C2CC;padding:20px 4px 0 0"><h3 style="font-size:30px;font-weight:600">Self-speculation</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">The subset is the verified prefix; the tail is thrown away and redrafted.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;border-top:3px solid #B8C2CC;padding:20px 4px 0 0"><h3 style="font-size:30px;font-weight:600">Any-subset decoding</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">The subset may sit past the first rejection; the rest stays masked.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;border-top:3px solid #C2410C;padding:20px 4px 0 0"><h3 style="font-size:30px;font-weight:600;color:#C2410C">Edit mode</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">Any subset kept, the rest regenerated in the forward that verifies: the tail survives.</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">Illustrative example · the Nemotron-Labs-Diffusion paper names non-prefix commits as an open direction</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">5</p>
+</section>
+</div>
+<div class="slide" data-id="fourth">
+<section id="fourth" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">The proposal</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">An edit mode: a fourth mode for Nemotron-Labs-Diffusion</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:20px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:28px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#6B7480">MODE 1</p><h3 style="font-size:32px;font-weight:600">AR</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">Exact, one token per forward.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:28px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#6B7480">MODE 2</p><h3 style="font-size:32px;font-weight:600">Diffusion</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">Drafts a whole block in parallel.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:28px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#6B7480">MODE 3</p><h3 style="font-size:32px;font-weight:600">Self-speculation</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">Diffusion drafts, AR accepts the prefix.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#F8E3D6;border:2px solid #C2410C;border-radius:16px;padding:27px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#C2410C">MODE 4 · NEW</p><h3 style="font-size:32px;font-weight:600">Edit</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">Reads the drafted block fully visible; per slot, keep or replace.</p></div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px"><h3 style="font-size:30px;font-weight:600;color:#0F766E">Bit-identical when off</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">A per-token-gated LoRA (r = 64, about 99M parameters), never merged: the three shipped modes are unchanged, checked bit for bit.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px"><h3 style="font-size:30px;font-weight:600;color:#0F766E">Lossless with verification</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">In the same forward, the AR stream commits the exact prefix and the edited tail becomes the next draft.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px"><h3 style="font-size:30px;font-weight:600;color:#0F766E">Labels for free</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">The target is the AR greedy trajectory, read off the lossless loop: prompts only, no ground truth.</p></div>
+</div>
+<div style="flex:1"></div>
+<p style="font-size:28px;line-height:1.4;color:#14202B;width:1640px"><b>Status.</b> Stage 1 is training offline on 2,000 prompts from Nemotron’s SFT sets; next, next-draft acceptance on held-out states, then the decode loop.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">Nemotron-Labs-Diffusion: Fu et al. 2026, arXiv 2607.05722 (AR, diffusion and self-speculation in one network)</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">6</p>
+</section>
+</div>
+<div class="slide" data-id="b-frontier">
+<section id="b-frontier" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Backup · Re-Cal on LLaDA-8B-Instruct</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">The HumanEval frontier: baselines, Re-Cal and two rounds</h2>
+<div style="display:flex;gap:40px;align-items:center">
+<img src="assets/ccadb83320b8aa678273bf985713474f.png" alt="HumanEval pass@1 against tokens per forward for Fast-dLLM, PIG.INT, dParallel and Re-Cal on frozen LLaDA and after two rounds of on-path training, with clairvoyant ceilings" style="width:1180px;height:690px;object-fit:contain;background:#FCFBF8;border-radius:12px">
+<div style="flex:1;display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;flex-direction:column;gap:4px"><p style="font-size:26px;color:#4A5560">Fast-dLLM, frozen</p><p style="font-size:44px;font-weight:600">8.9</p></div>
+<div style="display:flex;flex-direction:column;gap:4px"><p style="font-size:26px;color:#4A5560">Re-Cal, frozen</p><p style="font-size:44px;font-weight:600">11.2</p></div>
+<div style="display:flex;flex-direction:column;gap:4px"><p style="font-size:26px;color:#4A5560">Re-Cal, round 2</p><p style="font-size:44px;font-weight:600;color:#C2410C">15.8</p></div>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Stars: clairvoyant ceilings, 14.0 → 15.2 → 17.1.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">TPF* · 164 problems, BL = 32, Wilson 95% bars · dParallel lanes are its released checkpoint, decoded in our harness</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">B1</p>
+</section>
+</div>
+<div class="slide" data-id="b-ceiling">
+<section id="b-ceiling" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Backup · where the remaining speed is</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">On a frozen model the bottleneck is the model, not the reader</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px"><p style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;color:#14202B">14.0</p><p style="font-size:26px;line-height:1.4;color:#4A5560">Clairvoyant ceiling: commit every slot whose argmax already equals its final sequential token.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px"><p style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;color:#0F766E">0.945</p><p style="font-size:26px;line-height:1.4;color:#4A5560">Reader AUC on that path; it commits 77–81% of the committable slots per canvas.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px"><p style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;color:#B42318">36 vs 34%</p><p style="font-size:26px;line-height:1.4;color:#4A5560">A top-10 re-ranker barely beats the runner-up: the rest is not readable from one pass.</p></div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;border-top:3px solid #B8C2CC;padding-top:20px"><h3 style="font-size:30px;font-weight:600">dParallel: certainty forcing on random maskings</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">Most training canvases lie off any path a decoder takes, so the model hedges between outputs, the discrete version of crossing paths.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;border-top:3px solid #C2410C;padding-top:20px"><h3 style="font-size:30px;font-weight:600;color:#C2410C">Ours: on-path certainty forcing</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">One pairing per prompt, the output Re-Cal reaches at its largest safe budget, and training only along the path it takes: a reflow round.</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">Frozen LLaDA-8B-Instruct, HumanEval · sequential pass@1 0.396; ceiling pass@1 0.390</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">B2</p>
+</section>
+</div>
+<div class="slide" data-id="b-evset">
+<section id="b-evset" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Backup · the expected-value candidate set</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Each step keeps the candidates with the most expected tokens per forward</h2>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:column;gap:14px;background:#14202B;border-radius:16px;padding:40px 48px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:30px;line-height:1.4;color:#F1EEE6">(N, K) = (j + 1, 2)   if j &lt; c₁            miss: plus a draft-only forward</p>
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:30px;line-height:1.4;color:#F1EEE6">(N, K) = (cᵢ + 1, 1)  if cᵢ ≤ j &lt; cᵢ₊₁      continue from the block at cᵢ</p>
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:30px;line-height:1.4;color:#F28C5B">𝒞* = argmax over |𝒞| = C of  E[N] / E[K],   E[K] = 2 − S(c₁)</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C2CC">j = accept length, modelled by the adapter’s survival S; recomputed every step from that step’s draft.</p>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px"><h3 style="font-size:30px;font-weight:600;color:#0F766E">Greedy is enough</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">The exact optimum (chain dynamic program plus Dinkelbach) is within 0.04 TPF of greedy.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px"><h3 style="font-size:30px;font-weight:600;color:#0F766E">The rule matters</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">At equal C it beats tuned offsets and survival levels by 4–6% TPF, in all eight cells.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px"><h3 style="font-size:30px;font-weight:600;color:#B42318">C = 1 is the weak spot</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">One candidate misses on 26–29% of steps; the recovery forwards cancel the gain.</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">Nemotron-Labs-Diffusion-3B · HumanEval and GSM8K-500 · strict verification</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">B3</p>
+</section>
+</div>
+<div class="slide" data-id="b-anchor">
+<section id="b-anchor" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Backup · fixing C = 1: anchored candidates</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Commit every verified token, and take the next draft from the best anchor</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:48px;align-items:center">
+<div style="display:flex;flex-direction:column;gap:14px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px">
+<div style="display:flex;gap:8px;align-items:center"><p style="width:230px;font-size:24px;color:#6B7480">draft</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₁</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₂</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₃</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₄</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₅</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₆</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₇</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₈</p></div>
+<div style="display:flex;gap:8px;align-items:center"><p style="width:230px;font-size:24px;color:#6B7480">commit (j = 5)</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#D5ECE8;border:2px solid #0F766E">s₁</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#D5ECE8;border:2px solid #0F766E">s₂</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#D5ECE8;border:2px solid #0F766E">s₃</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#D5ECE8;border:2px solid #0F766E">s₄</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#D5ECE8;border:2px solid #0F766E">s₅</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#FCFBF8;border:2px solid #14202B"><b>a₆</b></p></div>
+<div style="display:flex;gap:8px;align-items:center"><p style="width:230px;font-size:24px;color:#6B7480">block at c₁ = 3</p><p style="width:64px;font-size:24px;padding:6px 0"> </p><p style="width:64px;font-size:24px;padding:6px 0"> </p><p style="width:64px;font-size:24px;padding:6px 0"> </p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#ECEAE4;border:2px solid #D5D1C7;color:#9AA3AD">b₄</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#ECEAE4;border:2px solid #D5D1C7;color:#9AA3AD">b₅</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#ECEAE4;border:2px solid #D5D1C7;color:#9AA3AD">b₆</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px solid #C2410C"><b>b₇</b></p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px solid #C2410C"><b>b₈</b></p></div>
+<p style="font-size:24px;line-height:1.4;color:#4A5560;width:860px">Block 3 was drafted in the same forward from s₁…s₃. Its guesses past a₆ become the next draft, 3 tokens stale instead of 6.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:22px">
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Always commit j + 1.</b> Every AR-verified token is kept whatever the candidates are.</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">A miss costs no forward.</b> A block at c = 0 is always drafted (Packed-SS); if j &lt; c₁ it takes over.</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Choose the anchor.</b> c₁ = argmax c · S(c): the expected freshness gained.</p>
+<p style="font-size:26px;line-height:1.4;color:#C2410C"><b>Runs in progress.</b></p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">Packed-SS: Chen and Cai, arXiv 2610.33379 · strict verification, so the output is the AR greedy walk</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">B4</p>
+</section>
+</div>
+<div class="slide" data-id="b-edlm">
+<section id="b-edlm" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Backup · training the edit mode</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Trained to predict the AR’s token from the visible draft</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:40px;align-items:stretch">
+<div style="width:900px;display:flex;flex-direction:column;gap:14px;background:#14202B;border-radius:16px;padding:40px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:30px;line-height:1.4;color:#F1EEE6">L(θ) = E[ − Σℓ wℓ log pθℓ(xℓ | z, c) ]</p>
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:26px;line-height:1.4;color:#F28C5B">wℓ = exp(−dℓ / γ),  dℓ = distance from the commit point</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C2CC">z: the drafted block, fully visible. c: the committed context (cached by the frozen base). x: the AR greedy tokens at the block’s positions. Cross-entropy on drafted slots only.</p>
+<p style="font-size:26px;line-height:1.4;color:#F1EEE6">At the optimum, keep-probability κℓ = pℓ(zℓ) = 1 − P[slot disagrees | features]: Re-Cal’s calibrated reader, plus an edit.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">States.</b> A committed prefix of the AR walk, a drafted block after it, the walk’s tokens there: from the lossless anchored loop, plus loop-free blocks of 16, 32 or 64 slots.</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Data.</b> 2,000 prompts (600 math, 600 chat, 800 code) from Nemotron’s SFT sets; 100 held out.</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Model.</b> LoRA r = 64 on attention and MLP of all 26 layers; base and LM head frozen; AdamW 1e-4, two epochs.</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="font-size:28px;line-height:1.4;color:#14202B;width:1640px"><b>Borrowed</b> from published DLM editors: own-draft corruption, loss on drafted slots only. <b>New:</b> the label-free AR target, the gated fourth mode, repair inside the lossless verify forward.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">Recipe from ProSeCo, ME-DLM, CDLM, SCOPE, PRISM, DEdit and others · γ swept over 8, 15, ∞</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">B5</p>
+</section>
+</div>
+</div></div>
+<div id="bar"><a href="../../">Home</a> <a href="https://arxiv.org/abs/2610.17375">Paper</a> <a href="Decoding_along_a_trajectory_slides.pdf" download>PDF</a><span class="sep"></span>
+<button id="prev" aria-label="Previous slide">&#9664;</button><span id="count"></span><button id="next" aria-label="Next slide">&#9654;</button>
+<button id="pause">Pause</button><button id="fs">Full screen</button>
+<span id="help">&larr; &rarr; to move &middot; P to pause on the final frame &middot; F full screen</span></div>
+<script>
+(()=>{
+const S=[...document.querySelectorAll('.slide')],stage=document.getElementById('stage'),
+ count=document.getElementById('count'),pb=document.getElementById('pause'),
+ isStatic=new URLSearchParams(location.search).has('static');
+if(isStatic)document.body.classList.add('static');
+let cur=-1;
+function fit(){const k=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform='scale('+k+')'}
+addEventListener('resize',fit);fit();
+function load(sl){sl.querySelectorAll('iframe.emb').forEach(f=>{f.srcdoc=f.dataset.srcdoc});
+ sl.querySelectorAll('img').forEach(i=>{if(/\.gif$/i.test(i.getAttribute('src'))){const s=i.getAttribute('src');i.src='';i.src=s}})}
+function unload(sl){sl.querySelectorAll('iframe.emb').forEach(f=>{f.removeAttribute('srcdoc');f.src='about:blank'});sl.classList.remove('frozen')}
+function freeze(on){const sl=S[cur];if(!sl||!sl.dataset.freeze)return;
+ if(on===undefined)on=!sl.classList.contains('frozen');
+ if(on)sl.classList.add('frozen');else{sl.classList.remove('frozen');unload(sl);load(sl)}
+ ui()}
+function ui(){const sl=S[cur];count.textContent=(cur+1)+' / '+S.length;
+ document.getElementById('prev').disabled=cur<=0;document.getElementById('next').disabled=cur>=S.length-1;
+ pb.disabled=!(sl&&sl.dataset.freeze);pb.textContent=sl&&sl.classList.contains('frozen')?'Play':'Pause'}
+function go(n,fromHash){n=Math.max(0,Math.min(S.length-1,n));if(n===cur)return;
+ if(cur>=0){S[cur].classList.remove('on');unload(S[cur])}
+ cur=n;S[cur].classList.add('on');
+ if(isStatic){if(S[cur].dataset.freeze)S[cur].classList.add('frozen');else load(S[cur])}else load(S[cur]);
+ if(!fromHash)history.replaceState(null,'','#'+(cur+1));ui()}
+const fromHash=()=>{const m=/^#(\d+)/.exec(location.hash);return m?+m[1]-1:0};
+addEventListener('hashchange',()=>go(fromHash(),true));
+document.getElementById('prev').onclick=()=>go(cur-1);document.getElementById('next').onclick=()=>go(cur+1);
+pb.onclick=()=>freeze();
+const fsb=document.getElementById('fs');fsb.onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()};
+addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey)return;const k=e.key;
+ if(['ArrowRight','ArrowDown','PageDown',' ','Enter','n'].includes(k)){go(cur+1);e.preventDefault()}
+ else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){go(cur-1);e.preventDefault()}
+ else if(k==='Home')go(0);else if(k==='End')go(S.length-1);
+ else if(k==='p'||k==='P'||k==='k'||k==='.')freeze();
+ else if(k==='f'||k==='F')fsb.onclick()});
+let tx=null;addEventListener('touchstart',e=>{tx=e.touches[0].clientX;show()},{passive:true});
+addEventListener('touchend',e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)go(cur+(dx<0?1:-1));tx=null},{passive:true});
+let hide=null;function show(){document.body.classList.add('ui');clearTimeout(hide);hide=setTimeout(()=>document.body.classList.remove('ui'),2600)}
+addEventListener('mousemove',show);
+document.body.classList.add('noanim');go(fromHash(),true);if(!isStatic)show();
+requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.remove('noanim')));
+})();
+</script>
+</body>
+</html>

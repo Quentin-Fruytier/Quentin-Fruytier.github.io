@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Progress update: attribution through compression and Re-Cal · Quentin Fruytier</title>
+<meta name="description" content="Group meeting progress update (November 2026)">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+html,body{margin:0;height:100%;background:#0E1116;overflow:hidden;-webkit-font-smoothing:antialiased}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{position:relative;flex:none;width:1920px;height:1080px;transform-origin:50% 50%}
+.slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .35s ease,visibility 0s linear .35s}
+.slide.on{opacity:1;visibility:visible;transition:opacity .35s ease}
+.slide>section{position:relative;width:1920px;height:1080px;box-sizing:border-box;overflow:hidden;font-size:32px}
+.slide section *{box-sizing:border-box;margin:0}
+.slide section h1{font-size:96px;font-weight:600;line-height:1.1}
+.slide section h2{font-size:64px;font-weight:600;line-height:1.15}
+.slide section h3{font-size:44px;font-weight:600;line-height:1.2}
+.slide section p{line-height:1.4}
+.slide section div:not([style*="display"]){display:flex;flex-direction:column}
+.slide section img{display:block}
+.slide section table{border-collapse:collapse;width:100%}
+.slide section th,.slide section td{padding:.35em .6em;border:1px solid rgba(0,0,0,.14);text-align:left}
+.slide section th{font-weight:600}
+iframe.emb{display:block;background:transparent}
+.slide section img.freeze{display:none}
+.slide.frozen section img.freeze{display:block}
+#bar{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;
+ padding:12px 12px 14px;font:14px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;color:#D5DBE1;
+ background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.6));opacity:0;transition:opacity .3s;pointer-events:none}
+body.ui #bar{opacity:1;pointer-events:auto}
+#bar a,#bar button{color:#fff;background:rgba(255,255,255,.14);border:0;border-radius:6px;padding:7px 11px;font:inherit;cursor:pointer;text-decoration:none}
+#bar a:hover,#bar button:hover{background:rgba(255,255,255,.26)}
+#bar button:disabled{opacity:.35;cursor:default}
+#bar .sep{width:12px}
+#count{min-width:64px;text-align:center;font-variant-numeric:tabular-nums}
+#help{opacity:.7}
+body.static #bar{display:none}
+body.static .slide,body.noanim .slide{transition:none}
+@media (max-width:700px){#help{display:none}}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+<div class="slide" data-id="cover">
+<section id="cover" data-transition="fade" style="background:#14202B;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:space-between">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#F28C5B">Group meeting · progress update · November 2026</p>
+<div style="display:flex;flex-direction:column;gap:40px">
+<h1 style="font-family:'Source Serif 4', Georgia, serif;font-size:96px;font-weight:600;line-height:1.05;color:#F1EEE6;width:1600px">Two projects in progress</h1>
+<div style="display:flex;gap:48px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:3px solid #5EC4B6;padding-top:24px">
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:48px;font-weight:500;line-height:1.15;color:#F1EEE6">Attribution through compression</h2>
+<p style="font-size:28px;line-height:1.4;color:#B8C2CC">Which retrieved sentences did the answer need? One forward pass instead of hundreds.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:3px solid #F28C5B;padding-top:24px">
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:48px;font-weight:500;line-height:1.15;color:#F1EEE6">Re-Cal</h2>
+<p style="font-size:28px;line-height:1.4;color:#B8C2CC">Decoding along a reference trajectory: pruned self-speculation, then an edit mode.</p>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Quentin Fruytier</p>
+<p style="font-size:28px;color:#B8C2CC">The University of Texas at Austin</p>
+</div>
+</section>
+</div>
+<div class="slide" data-id="shapley">
+<section id="shapley" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">Attribution · the classic reference</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Which retrieved sentences did the answer need? Shapley credit</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:40px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:12px;background:#14202B;border-radius:16px;padding:36px 40px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:32px;line-height:1.3;color:#F1EEE6">v(S) = log p(y | x, C_S)</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C2CC">How likely the model’s own answer y is when only the units in S are visible.</p>
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:32px;line-height:1.3;color:#5EC4B6">φᵢ = E_π [ v(Pᵢ ∪ {i}) − v(Pᵢ) ]</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C2CC">Unit i’s gain over the units Pᵢ before it, averaged over every ordering π.</p>
+</div>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Setting.</b> HotpotQA with distractors: 10 paragraphs, 2 of them gold, about 50 sentence units. Qwen2.5-1.5B-Instruct answers from the full context, and we attribute its own answer.</p>
+</div>
+<div style="width:700px;display:flex;flex-direction:column;gap:12px">
+<table style="font-size:26px;color:#14202B">
+<tr><th style="width:68%;text-align:left">method</th><th style="width:32%;text-align:right">extra passes</th></tr>
+<tr><td>Shapley (permutations)</td><td style="text-align:right">≈ 420</td></tr>
+<tr><td>KernelSHAP</td><td style="text-align:right">256</td></tr>
+<tr><td>leave-one-out</td><td style="text-align:right">n + 1 ≈ 51</td></tr>
+<tr><td>ContextCite</td><td style="text-align:right">32</td></tr>
+<tr><td>attention</td><td style="text-align:right">0</td></tr>
+<tr><td>AT2 (learned head weights)</td><td style="text-align:right">0</td></tr>
+<tr style="background:#D5ECE8"><td><b>ours (learned selector)</b></td><td style="text-align:right"><b>0</b></td></tr>
+</table>
+<p style="font-size:24px;color:#6B7480">Top four re-run the model on reduced contexts; the rest read the one full-context pass.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">Evaluation: the first 200 HotpotQA validation questions · the answer is correct for 111 of them</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">2</p>
+</section>
+</div>
+<div class="slide" data-id="problems">
+<section id="problems" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">Attribution · what goes wrong</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Shapley is expensive, and its game rewards confidence in the answer, right or wrong</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:24px;align-items:stretch">
+<div style="width:520px;display:flex;flex-direction:column;gap:10px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#6B7480">Problem 1 · cost</p>
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;color:#14202B">≈ 420</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">forward passes per answer, each on a reduced context.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B42318">Problem 2 · the game</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">v scores how likely the model’s <b>own</b> answer is. The model is wrong on 89 of 200 questions even with both gold paragraphs present. There the gold evidence argues against the answer, so Shapley scores it as harmful, and look-alike distractors that push toward the wrong answer earn the credit.</p>
+<div style="display:flex;gap:32px;align-items:flex-end">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;color:#B42318">49%</p><p style="font-size:26px;color:#4A5560;width:180px">Shapley</p>
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;color:#0F766E">66%</p><p style="font-size:26px;color:#4A5560;width:180px">ours</p>
+</div>
+<p style="font-size:24px;color:#6B7480">gold sentences kept in the top 10%, wrong answers</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:column;gap:8px;border-left:4px solid #0F766E;padding:4px 0 4px 24px">
+<p style="font-size:26px;line-height:1.4;color:#14202B"><b>Example.</b> “What is the adventure in Tunnels and Trolls?” Gold: Arena of Khazan. The model answers “Crusaders of Khazan”, a distractor.</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Shapley ranks that distractor 1st and 2nd and the gold sentences 6th and 30th. Re-asked with Shapley’s top 4: still wrong. With ours: correct.</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">200 HotpotQA validation questions · the model attends to the gold either way (median attention percentile 94 when wrong)</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">3</p>
+</section>
+</div>
+<div class="slide" data-id="method">
+<section id="method" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">Attribution · our method</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">One learned ordering, read from the pass that wrote the answer, trained on KL</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:40px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;gap:18px"><p style="font-family:'Source Serif 4', Georgia, serif;font-size:40px;font-weight:600;color:#0F766E;width:36px">1</p><p style="flex:1;font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Read.</b> Attention from the answer to each unit, from the one full-context pass.</p></div>
+<div style="display:flex;gap:18px"><p style="font-family:'Source Serif 4', Georgia, serif;font-size:40px;font-weight:600;color:#0F766E;width:36px">2</p><p style="flex:1;font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Rank.</b> A small selector (673 parameters linear, or a 0.5M adapter) orders the units; keep the first k.</p></div>
+<div style="display:flex;gap:18px"><p style="font-family:'Source Serif 4', Georgia, serif;font-size:40px;font-weight:600;color:#0F766E;width:36px">3</p><p style="flex:1;font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Train offline</b> through exact differentiable deletion inside the frozen model, at random budgets k. Zero extra passes at inference.</p></div>
+</div>
+<div style="width:860px;display:flex;flex-direction:column;gap:14px;background:#14202B;border-radius:16px;padding:36px 40px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:28px;line-height:1.4;color:#F1EEE6">J(θ) = E_k [ v(top k of πθ) ]</p>
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:28px;line-height:1.4;color:#F1EEE6">     = v(∅) + Σⱼ P[k ≥ j] · m_πθ(j)</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C2CC">A budget-weighted marginal vector along <b style="color:#F1EEE6">one</b> ordering. Shapley is the plain average over all n! orderings.</p>
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:28px;line-height:1.4;color:#5EC4B6">v_KL(S) = − Σₜ KL( p_N(·|y&lt;t) ‖ p_S(·|y&lt;t) )</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C2CC">Keep the model’s beliefs, not just one answer.</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="font-size:30px;line-height:1.4;color:#14202B;width:1640px">The identity holds for any game, so the KL-trained selector and the Shapley value of the KL game aim at the <b>same target</b>: one ordering, against the average of all.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">m_π(j): gain of the j-th unit over the units before it in π · p_N, p_S: next-token beliefs with the full context and with S only</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">4</p>
+</section>
+</div>
+<div class="slide" data-id="klshapley">
+<section id="klshapley" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">Attribution · the result</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Trained on KL, one pass matches the Shapley value of the KL game</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px"><p style="font-family:'Source Serif 4', Georgia, serif;font-size:64px;font-weight:600;color:#0F766E">5.86 vs 5.83</p><p style="font-size:26px;line-height:1.4;color:#4A5560">KL at 10% kept: ours vs KL-Shapley. Paired difference +0.03, 95% CI [−0.32, +0.39].</p></div>
+<div style="width:380px;display:flex;flex-direction:column;gap:8px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px"><p style="font-family:'Source Serif 4', Georgia, serif;font-size:64px;font-weight:600;color:#14202B">1 vs 420</p><p style="font-size:26px;line-height:1.4;color:#4A5560">forward passes per answer.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px"><p style="font-family:'Source Serif 4', Georgia, serif;font-size:64px;font-weight:600;color:#0F766E">0.77 vs 0.66</p><p style="font-size:26px;line-height:1.4;color:#4A5560">gold evidence kept in the top 10%: +11 points, 95% CI [+7, +14].</p></div>
+</div>
+<div style="flex:1"></div>
+<table style="font-size:26px;color:#14202B">
+<tr><th style="width:46%;text-align:left">method</th><th style="width:18%;text-align:right">passes</th><th style="width:18%;text-align:right">KL at 10% ↓</th><th style="width:18%;text-align:right">gold kept ↑</th></tr>
+<tr><td>Shapley, likelihood game</td><td style="text-align:right">≈ 420</td><td style="text-align:right">6.81</td><td style="text-align:right">0.63</td></tr>
+<tr><td>Shapley, KL game</td><td style="text-align:right">≈ 420</td><td style="text-align:right">5.83</td><td style="text-align:right">0.66</td></tr>
+<tr><td>AT2</td><td style="text-align:right">0</td><td style="text-align:right">6.60</td><td style="text-align:right">0.73</td></tr>
+<tr style="background:#D5ECE8"><td><b>ours, KL adapter (0.5M)</b></td><td style="text-align:right"><b>0</b></td><td style="text-align:right"><b>5.86</b></td><td style="text-align:right"><b>0.77</b></td></tr>
+</table>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">200 questions · KL in nats, summed over answer tokens · on the KL game every estimator’s KL falls by 0.95–1.19 nats</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">5</p>
+</section>
+</div>
+<div class="slide" data-id="tracking">
+<section id="tracking" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Re-Cal · the concept</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Trajectory tracking turns parallel decoding into a supervised problem</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:20px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:36px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">1 · Pick a reference</p>
+<h3 style="font-size:34px;font-weight:600;line-height:1.2">A slow decoder you trust</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">LLaDA: one token per pass, most confident first. Nemotron-Labs-Diffusion: its own AR mode, greedy.</p>
+</div>
+<p style="align-self:center;width:40px;font-size:56px;font-weight:600;text-align:center;color:#6B7480">→</p>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:36px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">2 · Label for free</p>
+<h3 style="font-size:34px;font-weight:600;line-height:1.2">Replay it once</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Every masked slot at every canvas the walk visits gets a label: does the token it would commit now differ from the one the reference ends with?</p>
+</div>
+<p style="align-self:center;width:40px;font-size:56px;font-weight:600;text-align:center;color:#6B7480">→</p>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#F8E3D6;border:2px solid #C2410C;border-radius:16px;padding:35px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">3 · Commit on a budget</p>
+<h3 style="font-size:34px;font-weight:600;line-height:1.2">Stay on its path</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Predict p̂ᵢ ≈ P[slot i disagrees] from the one forward pass, and commit slots while Σ p̂ᵢ ≤ φ.</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="font-size:32px;line-height:1.4;color:#14202B;width:1640px">PIG and Re-Cal track the sequential decode on LLaDA. On Nemotron the reference is the AR mode, and <b>self-speculation</b> is trajectory tracking with an exact verifier. The rest of this part makes that loop faster.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1300px;font-size:24px;color:#6B7480">PIG: Fruytier, Xue, Shakkottai, Sanghavi · arXiv 2610.17375 · Re-Cal on LLaDA: backup B4</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">6</p>
+</section>
+</div>
+<div class="slide" data-id="qss">
+<section id="qss" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Re-Cal on Nemotron-Labs-Diffusion-3B · self-speculation</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Quadratic self-speculation, pruned to a single candidate block</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:20px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:30px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#6B7480">LINEAR SS · RELEASE LOOP</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Draft a block in one forward, verify it with the AR in a second: j + 1 tokens per two forwards.</p>
+<div style="flex:1"></div>
+<p style="font-size:26px;color:#14202B"><b>3.22</b> / <b>4.12</b> TPF · 2 × 32 positions</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:30px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#6B7480">QUADRATIC SS</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Verify, and in the same forward draft a block after every possible accept length c = 0…31: j + 1 tokens per forward.</p>
+<div style="flex:1"></div>
+<p style="font-size:26px;color:#14202B"><b>4.58</b> / <b>5.90</b> TPF · 1,047 positions</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#F8E3D6;border:2px solid #C2410C;border-radius:16px;padding:29px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#C2410C">PRUNED · C = 1</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">A PIG-style adapter predicts the accept length, S(c) = P[j ≥ c]; draft only one block, after c₁.</p>
+<div style="flex:1"></div>
+<p style="font-size:26px;color:#14202B"><b>3.26</b> / <b>4.25</b> TPF · 57 positions</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;border-top:3px solid #B42318;padding-top:20px"><h3 style="font-size:30px;font-weight:600;color:#B42318">If c₁ ≤ j, the commit stops at c₁</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">The rule committed s₁…s_c₁ and the AR’s next token, then continued from that block: verified tokens past it were thrown away.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;border-top:3px solid #B42318;padding-top:20px"><h3 style="font-size:30px;font-weight:600;color:#B42318">If c₁ &gt; j, a miss costs a forward</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">No block sits at j, so the next forward only drafts. One candidate misses on 26–29% of steps, and the gain over linear SS is gone.</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">TPF on HumanEval / GSM8K-500, every forward counted · strict verification: the output is the AR greedy walk</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">7</p>
+</section>
+</div>
+<div class="slide" data-id="c1fix">
+<section id="c1fix" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Re-Cal on Nemotron · fixing C = 1</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Keep every verified token, and take the next draft from the anchor block</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:48px;align-items:center">
+<div style="display:flex;flex-direction:column;gap:14px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:32px">
+<div style="display:flex;gap:8px;align-items:center"><p style="width:230px;font-size:24px;color:#6B7480">draft</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₁</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₂</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₃</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₄</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₅</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₆</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₇</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px dashed #C2410C">s₈</p></div>
+<div style="display:flex;gap:8px;align-items:center"><p style="width:230px;font-size:24px;color:#6B7480">commit (j = 5)</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#D5ECE8;border:2px solid #0F766E">s₁</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#D5ECE8;border:2px solid #0F766E">s₂</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#D5ECE8;border:2px solid #0F766E">s₃</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#D5ECE8;border:2px solid #0F766E">s₄</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#D5ECE8;border:2px solid #0F766E">s₅</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#FCFBF8;border:2px solid #14202B"><b>a₆</b></p></div>
+<div style="display:flex;gap:8px;align-items:center"><p style="width:230px;font-size:24px;color:#6B7480">block at c₁ = 3</p><p style="width:64px;font-size:24px;padding:6px 0">&#160;</p><p style="width:64px;font-size:24px;padding:6px 0">&#160;</p><p style="width:64px;font-size:24px;padding:6px 0">&#160;</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#ECEAE4;border:2px solid #D5D1C7;color:#6B7480">b₄</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#ECEAE4;border:2px solid #D5D1C7;color:#6B7480">b₅</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#ECEAE4;border:2px solid #D5D1C7;color:#6B7480">b₆</p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px solid #C2410C"><b>b₇</b></p><p style="width:64px;font-size:24px;text-align:center;padding:6px 0;border-radius:6px;background:#F8E3D6;border:2px solid #C2410C"><b>b₈</b></p></div>
+<p style="font-size:24px;line-height:1.4;color:#4A5560;width:860px">Block 3 was drafted in the same forward, from s₁…s₃. Its guesses past a₆ are appended as the next draft: 3 tokens stale instead of 6.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Always commit j + 1.</b> When c₁ ≤ j, keep all of s₁…s_j and a_{j+1}, not just the tokens up to c₁.</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">A miss costs no forward.</b> A block at c = 0 is always drafted too (Packed-SS); if j &lt; c₁ it takes over.</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Choose the anchor.</b> c₁ = argmax c · S(c): the expected freshness gained.</p>
+<p style="font-size:26px;line-height:1.4;color:#C2410C"><b>Running now:</b> the truncation fix alone, then the merged rule.</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">Packed-SS: Chen and Cai, arXiv 2610.33379 · still lossless: every committed token is the AR’s</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">8</p>
+</section>
+</div>
+<div class="slide" data-id="edlm-pass">
+<section id="edlm-pass" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Re-Cal · the edit mode (EDLM)</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">One forward verifies the prefix and edits the tail</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:12px;align-items:stretch">
+<div style="width:340px;display:flex;flex-direction:column;gap:6px;background:#ECEAE4;border:2px solid #D5D1C7;border-radius:12px;padding:24px"><p style="font-size:24px;font-weight:600;color:#6B7480">CONTEXT</p><p style="font-size:26px;line-height:1.4;color:#4A5560">Prompt and committed tokens, cached by the frozen base</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px;background:#FCFBF8;border:2px solid #14202B;border-radius:12px;padding:24px"><p style="font-size:24px;font-weight:600;color:#14202B">AR ROWS · GATE OFF</p><p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:28px;color:#14202B">x  s₁ s₂ … s_m</p><p style="font-size:26px;line-height:1.4;color:#4A5560">Causal, exactly the shipped verifier</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px;background:#F8E3D6;border:2px solid #C2410C;border-radius:12px;padding:24px"><p style="font-size:24px;font-weight:600;color:#C2410C">EDITOR ROWS · GATE ON</p><p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:28px;color:#14202B">s₁ s₂ … s_m</p><p style="font-size:26px;line-height:1.4;color:#4A5560">A copy of the draft, fully visible, same position ids</p></div>
+</div>
+<div style="display:flex;gap:12px;align-items:stretch">
+<div style="width:340px"></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px;border-top:3px solid #14202B;padding-top:16px"><p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Out:</b> AR tokens a₁…a_{m+1}, so the exact accept length j. Commit s₁…s_j and a_{j+1}.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px;border-top:3px solid #C2410C;padding-top:16px"><p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">Out:</b> per slot, pℓ over the vocabulary: keep κℓ = pℓ(sℓ), edit = argmax pℓ. The edited tail is the next draft.</p></div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px"><h3 style="font-size:30px;font-weight:600;color:#0F766E">Inputs</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">The cached context, the drafted block shown in full, and the AR stream over the same draft.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px"><h3 style="font-size:30px;font-weight:600;color:#0F766E">Model</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">A per-token-gated LoRA on every layer (r = 64, about 99M parameters); base and LM head frozen.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px"><h3 style="font-size:30px;font-weight:600;color:#0F766E">Gate off</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">Every projection returns the base output: AR, diffusion and self-speculation are bit-identical.</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">Nemotron-Labs-Diffusion-3B · a fourth mode next to AR, diffusion and self-speculation</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">9</p>
+</section>
+</div>
+<div class="slide" data-id="edlm-train">
+<section id="edlm-train" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Re-Cal · training the edit mode, now</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Train it to predict the AR’s token at every drafted slot</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:32px;align-items:stretch">
+<div style="width:860px;display:flex;flex-direction:column;gap:14px;background:#14202B;border-radius:16px;padding:36px 40px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#F28C5B">LOSS</p>
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:30px;line-height:1.4;color:#F1EEE6">L(θ) = E[ − Σℓ wℓ log pθℓ(xℓ | z, c) ]</p>
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:26px;line-height:1.4;color:#F28C5B">wℓ = exp(−dℓ / γ),  γ ∈ {8, 15, ∞}</p>
+<p style="font-size:26px;line-height:1.4;color:#B8C2CC">z: the drafted block. c: the cached context. x: the AR greedy tokens at the block’s positions, free from the lossless loop. dℓ: distance from the commit point. Drafted slots only; keep = predict the shown token.</p>
+<p style="font-size:26px;line-height:1.4;color:#F1EEE6">Optimum: κℓ = 1 − P[slot disagrees | features], Re-Cal’s calibrated reader, plus an edit.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:36px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#C2410C">THE LOOP</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">1.</b> The diffusion mode drafts a block.</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">2.</b> One forward: AR rows verify, editor rows read the draft.</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">3.</b> Commit s₁…s_j and a_{j+1}: lossless.</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">4.</b> Accept any subset of the tail; replace or re-mask the rest.</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560"><b style="color:#14202B">5.</b> The repaired tail is the next draft; go to 2.</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="font-size:28px;line-height:1.4;color:#14202B;width:1640px"><b>Data.</b> States from the lossless anchored C = 1 loop, plus loop-free blocks of 16, 32 or 64 slots, on 2,000 Nemotron SFT prompts. <b>Next:</b> next-draft acceptance offline: edited tail vs unedited tail vs the loop’s redraft.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">AdamW 1e-4, two epochs · one causal prefill per prompt serves all its states · recipe from seven published DLM editors</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">10</p>
+</section>
+</div>
+<div class="slide" data-id="h-properties">
+<section id="h-properties" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">Backup · theory</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">What the sufficiency ordering keeps, gives up and gains against Shapley</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:24px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:36px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#0F766E">KEEPS</p>
+<p style="font-size:30px;line-height:1.4;color:#14202B">Efficiency</p><p style="font-size:30px;line-height:1.4;color:#14202B">Null player</p><p style="font-size:30px;line-height:1.4;color:#14202B">Affine invariance</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#FCFBF8;border:1px solid #E2DED4;border-radius:16px;padding:36px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#B42318">GIVES UP, BY DESIGN</p>
+<p style="font-size:30px;line-height:1.4;color:#14202B">Symmetry</p><p style="font-size:30px;line-height:1.4;color:#14202B">Additivity</p><p style="font-size:30px;line-height:1.4;color:#14202B">Marginalism</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#D5ECE8;border:2px solid #0F766E;border-radius:16px;padding:35px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#0F766E">GAINS</p>
+<p style="font-size:30px;line-height:1.4;color:#14202B">Robustness to duplicated units</p><p style="font-size:30px;line-height:1.4;color:#14202B">Sufficiency optimality</p><p style="font-size:30px;line-height:1.4;color:#14202B">(1 − 1/e) for submodular games</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="font-size:30px;line-height:1.4;color:#14202B;width:1640px">The two are in one-to-one correspondence, and they coincide exactly when the game is additive. Duplicating a sentence splits its Shapley credit; the ordering keeps one copy and moves on.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">Working paper: Attribution Through Compression · sections on Shapley vs the sufficiency ordering and their properties</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">B1</p>
+</section>
+</div>
+<div class="slide" data-id="h-ragtable">
+<section id="h-ragtable" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">Backup · the full comparison</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Every method on both games, at 5% and 10% kept</h2>
+<table style="font-size:24px;color:#14202B">
+<tr><th style="width:28%;text-align:left">method</th><th style="width:9%;text-align:right">passes</th><th style="width:9%;text-align:right">D 5%</th><th style="width:9%;text-align:right">D 10%</th><th style="width:9%;text-align:right">KL 5%</th><th style="width:9%;text-align:right">KL 10%</th><th style="width:9%;text-align:right">gold all</th><th style="width:9%;text-align:right">right</th><th style="width:9%;text-align:right">wrong</th></tr>
+<tr><td>Shapley · likelihood</td><td style="text-align:right">≈420</td><td style="text-align:right">5.67</td><td style="text-align:right">2.81</td><td style="text-align:right">9.20</td><td style="text-align:right">6.81</td><td style="text-align:right">0.63</td><td style="text-align:right">0.75</td><td style="text-align:right">0.49</td></tr>
+<tr><td>KernelSHAP · likelihood</td><td style="text-align:right">256</td><td style="text-align:right">5.76</td><td style="text-align:right">3.38</td><td style="text-align:right">9.28</td><td style="text-align:right">7.21</td><td style="text-align:right">0.59</td><td style="text-align:right">0.68</td><td style="text-align:right">0.48</td></tr>
+<tr><td>leave-one-out · likelihood</td><td style="text-align:right">n+1</td><td style="text-align:right">6.71</td><td style="text-align:right">3.50</td><td style="text-align:right">10.22</td><td style="text-align:right">7.54</td><td style="text-align:right">0.59</td><td style="text-align:right">0.67</td><td style="text-align:right">0.49</td></tr>
+<tr><td>ContextCite · likelihood</td><td style="text-align:right">32</td><td style="text-align:right">7.33</td><td style="text-align:right">4.81</td><td style="text-align:right">10.60</td><td style="text-align:right">8.16</td><td style="text-align:right">0.50</td><td style="text-align:right">0.58</td><td style="text-align:right">0.41</td></tr>
+<tr style="background:#ECEAE4"><td>Shapley · KL</td><td style="text-align:right">≈420</td><td style="text-align:right">6.24</td><td style="text-align:right">3.86</td><td style="text-align:right">8.57</td><td style="text-align:right">5.83</td><td style="text-align:right">0.66</td><td style="text-align:right">0.75</td><td style="text-align:right">0.55</td></tr>
+<tr style="background:#ECEAE4"><td>KernelSHAP · KL</td><td style="text-align:right">256</td><td style="text-align:right">6.41</td><td style="text-align:right">3.98</td><td style="text-align:right">8.74</td><td style="text-align:right">6.02</td><td style="text-align:right">0.64</td><td style="text-align:right">0.72</td><td style="text-align:right">0.54</td></tr>
+<tr style="background:#ECEAE4"><td>leave-one-out · KL</td><td style="text-align:right">n+1</td><td style="text-align:right">7.26</td><td style="text-align:right">4.84</td><td style="text-align:right">9.35</td><td style="text-align:right">6.59</td><td style="text-align:right">0.71</td><td style="text-align:right">0.78</td><td style="text-align:right">0.62</td></tr>
+<tr><td>attention</td><td style="text-align:right">0</td><td style="text-align:right">7.51</td><td style="text-align:right">4.87</td><td style="text-align:right">9.81</td><td style="text-align:right">6.91</td><td style="text-align:right">0.69</td><td style="text-align:right">0.76</td><td style="text-align:right">0.62</td></tr>
+<tr><td>AT2</td><td style="text-align:right">0</td><td style="text-align:right">6.16</td><td style="text-align:right">4.05</td><td style="text-align:right">9.07</td><td style="text-align:right">6.60</td><td style="text-align:right">0.73</td><td style="text-align:right">0.84</td><td style="text-align:right">0.61</td></tr>
+<tr><td>ours, linear</td><td style="text-align:right">0</td><td style="text-align:right">6.61</td><td style="text-align:right">4.07</td><td style="text-align:right">8.90</td><td style="text-align:right">6.32</td><td style="text-align:right">0.76</td><td style="text-align:right">0.84</td><td style="text-align:right">0.66</td></tr>
+<tr><td>ours, adapter 2.1M</td><td style="text-align:right">0</td><td style="text-align:right">6.77</td><td style="text-align:right">3.87</td><td style="text-align:right">9.53</td><td style="text-align:right">6.57</td><td style="text-align:right">0.74</td><td style="text-align:right">0.84</td><td style="text-align:right">0.62</td></tr>
+<tr style="background:#D5ECE8"><td><b>ours, KL adapter 0.5M</b></td><td style="text-align:right"><b>0</b></td><td style="text-align:right">6.40</td><td style="text-align:right">3.91</td><td style="text-align:right">8.87</td><td style="text-align:right"><b>5.86</b></td><td style="text-align:right"><b>0.77</b></td><td style="text-align:right"><b>0.84</b></td><td style="text-align:right"><b>0.67</b></td></tr>
+</table>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">D and KL in nats, lower is better · gold = share of gold sentences in the top 10%, split by whether the answer was right (111) or wrong (89)</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">B2</p>
+</section>
+</div>
+<div class="slide" data-id="h-ragfig">
+<section id="h-ragfig" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F766E">Backup · why the likelihood score misleads</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Keeping the answer likely is not keeping the model’s beliefs</h2>
+<div style="flex:1"></div>
+<div style="display:flex;gap:40px;align-items:center">
+<img src="assets/ae6753a1acf90dae13b32d7cb63d9259.png" alt="Left: log-likelihood lost against KL per method; multiple-pass methods keep the answer likely but move the beliefs most, and the arrow moves Shapley to the KL game. Right: pass@2 when re-asking with only the top 10 percent of units" style="width:1100px;height:540px;object-fit:contain;background:#FCFBF8;border-radius:12px">
+<div style="flex:1;display:flex;flex-direction:column;gap:18px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#14202B">KLₜ = p_N(yₜ) · Δ(yₜ)<br>    + Σ_{w≠yₜ} p_N(w) · Δ(w)</p>
+<p style="font-size:24px;line-height:1.4;color:#6B7480">Δ(w) = log p_N(w) − log p_S(w)</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">A kept set that makes the model <b style="color:#14202B">more</b> confident in its answer lowers the first term and D, even below zero, but drains the alternatives it was weighing and raises the second.</p>
+<p style="font-size:26px;line-height:1.4;color:#4A5560">Querying the model finds such sets. Reading its attention cannot.</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">200 questions, 10% kept · right panel: pass@2 = the original or the re-asked answer is correct; gold paragraphs alone 0.730</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">B3</p>
+</section>
+</div>
+<div class="slide" data-id="h-recal">
+<section id="h-recal" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Backup · Re-Cal on LLaDA-8B-Instruct</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">PIG’s reader without the pairwise estimator, then two rounds</h2>
+<div style="display:flex;gap:40px;align-items:center">
+<img src="assets/a77902c66e0604b327dc0db2ce5f1055.png" alt="HumanEval pass@1 against tokens per forward for Fast-dLLM, PIG.INT, dParallel and Re-Cal on frozen LLaDA and after two rounds of on-path training, with clairvoyant ceilings" style="width:1180px;height:690px;object-fit:contain;background:#FCFBF8;border-radius:12px">
+<div style="flex:1;display:flex;flex-direction:column;gap:22px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;color:#14202B">pᵢ ≈ P[xᵢ ≠ final]</p>
+<div style="display:flex;flex-direction:column;gap:4px"><p style="font-size:26px;color:#4A5560">PIG.INT, frozen</p><p style="font-size:44px;font-weight:600">9.3</p></div>
+<div style="display:flex;flex-direction:column;gap:4px"><p style="font-size:26px;color:#4A5560">Re-Cal, frozen</p><p style="font-size:44px;font-weight:600">11.2</p></div>
+<div style="display:flex;flex-direction:column;gap:4px"><p style="font-size:26px;color:#4A5560">Re-Cal, round 2</p><p style="font-size:44px;font-weight:600;color:#C2410C">15.8</p></div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">HumanEval, TPF* (fastest setting with pass@1 ≥ 0.322) · stars: clairvoyant ceilings, 14.0 → 17.1 after two rounds</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">B4</p>
+</section>
+</div>
+<div class="slide" data-id="h-prune">
+<section id="h-prune" style="background:#F6F5F1;color:#14202B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C2410C">Backup · pruning with more candidates</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#14202B">Five candidates keep most of quadratic self-speculation at a fifth of its width</h2>
+<div style="flex:1"></div>
+<table style="font-size:26px;color:#14202B">
+<tr><th style="width:28%;text-align:left">decoder</th><th style="width:12%;text-align:right">positions</th><th style="width:12%;text-align:right">miss %</th><th style="width:12%;text-align:right">HumanEval</th><th style="width:12%;text-align:right">TPF</th><th style="width:12%;text-align:right">GSM8K-500</th><th style="width:12%;text-align:right">TPF</th></tr>
+<tr><td>linear SS (release)</td><td style="text-align:right">2 × 32</td><td style="text-align:right">–</td><td style="text-align:right">0.793</td><td style="text-align:right">3.22</td><td style="text-align:right">0.892</td><td style="text-align:right">4.12</td></tr>
+<tr><td>quadratic SS, all 32</td><td style="text-align:right">1,047</td><td style="text-align:right">0</td><td style="text-align:right">0.780</td><td style="text-align:right">4.58</td><td style="text-align:right">0.894</td><td style="text-align:right">5.90</td></tr>
+<tr><td>pruned, C = 1</td><td style="text-align:right">57</td><td style="text-align:right">29 / 26</td><td style="text-align:right">0.780</td><td style="text-align:right">3.26</td><td style="text-align:right">0.898</td><td style="text-align:right">4.25</td></tr>
+<tr><td>pruned, C = 3</td><td style="text-align:right">121</td><td style="text-align:right">7 / 6</td><td style="text-align:right">0.805</td><td style="text-align:right">3.98</td><td style="text-align:right">0.890</td><td style="text-align:right">5.16</td></tr>
+<tr style="background:#F8E3D6"><td><b>pruned, C = 5</b></td><td style="text-align:right"><b>187</b></td><td style="text-align:right">2.5 / 1.9</td><td style="text-align:right">0.799</td><td style="text-align:right"><b>4.27</b></td><td style="text-align:right">0.890</td><td style="text-align:right"><b>5.53</b></td></tr>
+</table>
+<div style="flex:1"></div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;border-top:3px solid #0F766E;padding-top:20px"><h3 style="font-size:30px;font-weight:600">The rule</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">Each step keeps the C blocks that maximise expected tokens over expected forwards, under the adapter’s accept-length law.</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;border-top:3px solid #0F766E;padding-top:20px"><h3 style="font-size:30px;font-weight:600">What it buys</h3><p style="font-size:26px;line-height:1.4;color:#4A5560">C = 5: +32% / +34% TPF, lossless, 76–85% of the quadratic gain. It beats tuned offsets by 4–6%.</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7480">Nemotron-Labs-Diffusion-3B · strict verification · paired 95% accuracy intervals vs linear SS contain 0 for every pruned row</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7480">B5</p>
+</section>
+</div>
+</div></div>
+<div id="bar"><a href="../../">Home</a> <a href="Progress_Nov2026_slides.pdf" download>PDF</a><span class="sep"></span>
+<button id="prev" aria-label="Previous slide">&#9664;</button><span id="count"></span><button id="next" aria-label="Next slide">&#9654;</button>
+<button id="pause">Pause</button><button id="fs">Full screen</button>
+<span id="help">&larr; &rarr; to move &middot; P to pause on the final frame &middot; F full screen</span></div>
+<script>
+(()=>{
+const S=[...document.querySelectorAll('.slide')],stage=document.getElementById('stage'),
+ count=document.getElementById('count'),pb=document.getElementById('pause'),
+ isStatic=new URLSearchParams(location.search).has('static');
+if(isStatic)document.body.classList.add('static');
+let cur=-1;
+function fit(){const k=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform='scale('+k+')'}
+addEventListener('resize',fit);fit();
+function load(sl){sl.querySelectorAll('iframe.emb').forEach(f=>{f.srcdoc=f.dataset.srcdoc});
+ sl.querySelectorAll('img').forEach(i=>{if(/\.gif$/i.test(i.getAttribute('src'))){const s=i.getAttribute('src');i.src='';i.src=s}})}
+function unload(sl){sl.querySelectorAll('iframe.emb').forEach(f=>{f.removeAttribute('srcdoc');f.src='about:blank'});sl.classList.remove('frozen')}
+function freeze(on){const sl=S[cur];if(!sl||!sl.dataset.freeze)return;
+ if(on===undefined)on=!sl.classList.contains('frozen');
+ if(on)sl.classList.add('frozen');else{sl.classList.remove('frozen');unload(sl);load(sl)}
+ ui()}
+function ui(){const sl=S[cur];count.textContent=(cur+1)+' / '+S.length;
+ document.getElementById('prev').disabled=cur<=0;document.getElementById('next').disabled=cur>=S.length-1;
+ pb.disabled=!(sl&&sl.dataset.freeze);pb.textContent=sl&&sl.classList.contains('frozen')?'Play':'Pause'}
+function go(n,fromHash){n=Math.max(0,Math.min(S.length-1,n));if(n===cur)return;
+ if(cur>=0){S[cur].classList.remove('on');unload(S[cur])}
+ cur=n;S[cur].classList.add('on');
+ if(isStatic){if(S[cur].dataset.freeze)S[cur].classList.add('frozen');else load(S[cur])}else load(S[cur]);
+ if(!fromHash)history.replaceState(null,'','#'+(cur+1));ui()}
+const fromHash=()=>{const m=/^#(\d+)/.exec(location.hash);return m?+m[1]-1:0};
+addEventListener('hashchange',()=>go(fromHash(),true));
+document.getElementById('prev').onclick=()=>go(cur-1);document.getElementById('next').onclick=()=>go(cur+1);
+pb.onclick=()=>freeze();
+const fsb=document.getElementById('fs');fsb.onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()};
+addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey)return;const k=e.key;
+ if(['ArrowRight','ArrowDown','PageDown',' ','Enter','n'].includes(k)){go(cur+1);e.preventDefault()}
+ else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){go(cur-1);e.preventDefault()}
+ else if(k==='Home')go(0);else if(k==='End')go(S.length-1);
+ else if(k==='p'||k==='P'||k==='k'||k==='.')freeze();
+ else if(k==='f'||k==='F')fsb.onclick()});
+let tx=null;addEventListener('touchstart',e=>{tx=e.touches[0].clientX;show()},{passive:true});
+addEventListener('touchend',e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)go(cur+(dx<0?1:-1));tx=null},{passive:true});
+let hide=null;function show(){document.body.classList.add('ui');clearTimeout(hide);hide=setTimeout(()=>document.body.classList.remove('ui'),2600)}
+addEventListener('mousemove',show);
+document.body.classList.add('noanim');go(fromHash(),true);if(!isStatic)show();
+requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.remove('noanim')));
+})();
+</script>
+</body>
+</html>
