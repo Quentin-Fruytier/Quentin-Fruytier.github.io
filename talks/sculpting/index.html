@@ -64,9 +64,9 @@ body.static .slide,body.noanim .slide{transition:none}
 <section id="setting" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
 <p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">The setting</p>
 <h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">An autoencoder compresses each image into a few numbers</h2>
-<img src="assets/8e54e223dc89585ebbc8cccca79e0738.png" alt="An input face goes through an encoder to a short latent vector z, then through a decoder back to a reconstruction of the face" style="position:absolute;left:128px;top:300px;width:1664px;height:560px;object-fit:contain">
-<img data-build-in="fade 1" src="assets/c057b737a5eb7e76cc3ef2d32113ffc0.png" alt="The latent vector is labelled: z = (z1, …, zd), d numbers per image, d = 32 for CelebA faces" style="position:absolute;left:128px;top:300px;width:1664px;height:560px;object-fit:contain">
-<img data-build-in="fade 2" src="assets/685c7c63ab7ef00dd96785d24d5941ab.png" alt="A panel adds the cloud of codes from encoding every image: the aggregate posterior q(z) = E over x of q(z | x)" style="position:absolute;left:128px;top:300px;width:1664px;height:560px;object-fit:contain">
+<img src="assets/0593dbfb55fef2c45e0b580e85b25643.png" alt="An input face goes through an encoder to a short latent vector z, then through a decoder back to a reconstruction of the face" style="position:absolute;left:128px;top:300px;width:1664px;height:560px;object-fit:contain">
+<img data-build-in="fade 1" src="assets/56417af27d2c197e13736546a3c30ae8.png" alt="The latent vector is labelled: z = (z1, …, zd), d numbers per image; d is a design choice, CelebA itself labels 40 attributes" style="position:absolute;left:128px;top:300px;width:1664px;height:560px;object-fit:contain">
+<img data-build-in="fade 2" src="assets/bcbb7ec3873087cd8eb5c06cfd4f0267.png" alt="A panel adds the cloud of codes from encoding every image: the aggregate posterior q(z) = E over x of q(z | x)" style="position:absolute;left:128px;top:300px;width:1664px;height:560px;object-fit:contain">
 <p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">CelebA face; the reconstruction is illustrative · encoder q(z | x) and decoder q(x | z) with weights θ₁ and θ₂, as in the paper</p>
 <p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">2</p>
 </section>
@@ -130,10 +130,10 @@ body.static .slide,body.noanim .slide{transition:none}
 <div class="slide" data-id="cost">
 <section id="cost" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
 <p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">The other cost · reconstruction</p>
-<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">Noise in the code also degrades reconstruction</h2>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">VAE noise trades reconstruction for generation</h2>
 <img src="assets/ca84dd5cc95045774e179b11fcaca6b1.png" alt="Bar chart of extra reconstruction error versus a plain autoencoder, in dB, on 8 datasets: the standard VAE is 0.1 to 4.1 dB worse" style="position:absolute;left:128px;top:290px;width:1664px;height:470px;object-fit:contain">
 <img data-build-in="fade 1" src="assets/ff9cf10f48a035e4538dfe72e779f9fb.png" alt="Adds beta-VAE bars: 1.3 to 10.5 dB worse than a plain autoencoder" style="position:absolute;left:128px;top:290px;width:1664px;height:470px;object-fit:contain">
-<p data-build-in="fade 2" style="position:absolute;left:128px;top:786px;width:1664px;font-size:26px;line-height:1.4;color:#1B1F2A">Disentangled codes are not only for generating new images: we also compress, edit and search images we already have, so reconstruction matters. On average the VAE costs +2.2 dB and β-VAE +5.1 dB. So we keep a deterministic autoencoder and regularize the aggregate instead.</p>
+<p data-build-in="fade 2" style="position:absolute;left:128px;top:786px;width:1664px;font-size:26px;line-height:1.4;color:#1B1F2A">Noise plus the pull toward N(0, I) is what lets a VAE generate; the price is reconstruction (on average +2.2 dB for the VAE, +5.1 dB for <span style="white-space:nowrap">β-VAE</span>). Compressing, editing or searching images we already have needs a deterministic autoencoder, and there is currently no widely accepted way to disentangle one.</p>
 <p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Reconstruction NMSE from the paper’s Table 1, minus the standard AE’s on the same dataset</p>
 <p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">7</p>
 </section>
