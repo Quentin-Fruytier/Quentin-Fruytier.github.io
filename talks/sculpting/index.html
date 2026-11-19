@@ -34,6 +34,9 @@ iframe.emb{display:block;background:transparent}
 .slide.frozen section img.freeze{display:block}
 .slide [data-build-in],.slide [data-build-out]{transition:opacity .45s ease}
 .slide .bhide{opacity:0!important;pointer-events:none}
+.slide.nofade{transition:none!important}
+.slide.mg section .mgn{transition:opacity .55s ease .35s}
+.slide.mgh section .mgn{opacity:0}
 .slide.notr [data-build-in],.slide.notr [data-build-out],body.noanim .slide [data-build-in],body.noanim .slide [data-build-out]{transition:none!important}
 #pips{letter-spacing:2px;opacity:.75;min-width:0}
 #bar{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;
@@ -70,11 +73,11 @@ body.static .slide,body.noanim .slide{transition:none}
 <div class="slide" data-id="setting">
 <section id="setting" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
 <p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">The classic model · autoencoders</p>
-<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#1B1F2A">Autoencoders compress data into salient features via maximum a posteriori estimation</h2>
-<img src="assets/c1e734e1eb4dded678963fc56b6f18f2.png" alt="A CelebA test face goes through the encoder z = f(x) to a latent vector z1 to z32 and through the decoder to its reconstruction, the real output of a plain autoencoder" style="position:absolute;left:128px;top:312px;width:1664px;height:584px;object-fit:contain">
-<img data-build-in="fade 1" src="assets/2b2320a4825a6384e10600ae569707d2.png" alt="Training as MAP estimation: f(x) approximates the argmax over z of log q(x | z) + log p(z); with a Gaussian decoder and a flat prior this is the familiar squared reconstruction loss" style="position:absolute;left:128px;top:312px;width:1664px;height:584px;object-fit:contain">
-<img data-build-in="fade 2" src="assets/b8e81a59cce5484c6b0ee1727fe7d3e3.png" alt="What one latent encodes: seven decoded faces as latent 32 slides from low to high with the other 31 fixed; the smile, the skin tone and the background change together" style="position:absolute;left:128px;top:312px;width:1664px;height:584px;object-fit:contain">
-<img data-build-in="fade 3" src="assets/8080c3df4032a9cb280896375bdbd583.png" alt="The codes of 2,000 test images on latents 12 and 32 form a tilted cloud, the aggregate posterior q(z); the best-fit line has R squared 0.41, so latent 12 predicts 41 percent of latent 32's variance and the latents are not independent" style="position:absolute;left:128px;top:312px;width:1664px;height:584px;object-fit:contain">
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">Autoencoders compress data into salient features via MAP</h2>
+<img src="assets/58eaf3e8e9dc4862efa25a96030784b4.png" alt="A CelebA test face goes through the encoder z = f(x) to 32 latents and through the decoder x-hat = g(z) to its reconstruction, the real output of a plain autoencoder" style="position:absolute;left:128px;top:268px;width:1100px;height:212px;object-fit:contain">
+<img data-build-in="fade 1" src="assets/70f27d69f3333aa7f2d7bc1d8838e695.png" alt="Maximum a posteriori estimation: the code z-hat(x) maximizes p(z | x), that is log p(x | z) + log p(z); with a Gaussian decoder and a flat prior it minimizes the squared error to g(z), and the encoder learns this, so training minimizes the expected squared reconstruction error" style="position:absolute;left:128px;top:480px;width:1100px;height:202px;object-fit:contain">
+<img data-build-in="fade 2" src="assets/f3f5f35f00318c5e155fb46ff1f64aef.png" alt="Seven decoded faces as latent 32 is swept through -19.9, -15.1, -10.2, -5.4, -0.5, 4.3 and 9.2 with the other 31 latents fixed (this image: -17.5); the smile, the skin tone and the background change together" style="position:absolute;left:128px;top:682px;width:1100px;height:218px;object-fit:contain">
+<img data-build-in="fade 3" src="assets/0fd75bfaae528fc7c39d5567391b8144.png" alt="Latents 12 and 32 of 2,000 test images form a tilted cloud; the best-fit line has R squared 0.41: latent 12 alone predicts 41 percent of latent 32, where independent latents would give 0 percent" style="position:absolute;left:1238px;top:268px;width:554px;height:632px;object-fit:contain">
 <p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">CelebA test images · plain autoencoder (d = 32) retrained with the public code · R² on the 2,000 codes shown</p>
 <p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">2</p>
 <img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
@@ -87,7 +90,7 @@ body.static .slide,body.noanim .slide{transition:none}
 <img src="assets/0fcc0d112ddad2c93840572f9ac5c78f.png" alt="The latent vector z1 to z32, with four CelebA attributes under the first four latents (smiling, eyeglasses, blond hair, male), each shown by two real CelebA test images labelled no and yes" style="position:absolute;left:128px;top:272px;width:1664px;height:610px;object-fit:contain">
 <img data-build-in="fade 1" src="assets/7e43036c205d4392712221545db0d0fe.png" alt="Card (1) Independent: p(z) equals the product of the p(zi). Real CelebA codes of 1,500 test images: a plain autoencoder's most dependent latent pair is correlated (r = 0.63); ours has a round cloud (r = 0.00)" style="position:absolute;left:128px;top:272px;width:1664px;height:610px;object-fit:contain">
 <img data-build-in="fade 2" src="assets/8d1122f51fa9f40cfc455e88b488879c.png" alt="Card (2) Interpretable: our model aligned to four CelebA labels; on one test face, moving latent 1 adds a smile, latent 2 adds eyeglasses, latent 3 turns the hair blond, latent 4 changes the face from female to male" style="position:absolute;left:128px;top:272px;width:1664px;height:610px;object-fit:contain">
-<p data-build-in="fade 3" style="position:absolute;left:128px;top:892px;width:1664px;font-size:26px;line-height:1.4;color:#1B1F2A"><b>The catch:</b> without labels, (2) is not identifiable. So we enforce (1), then add (2) through the prior.</p>
+<p data-build-in="fade 3" style="position:absolute;left:128px;top:888px;width:1664px;font-size:26px;line-height:1.4;color:#1B1F2A"><b>Supervision:</b> (1) is believed learnable without labels. (2) is not: without at least weak supervision the factors are not identifiable (Locatello et al., ICML 2019). So we learn (1) unsupervised and add (2) through the prior from a few labels.</p>
 <p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">CelebA test images · models retrained with the public code, d = 32 · (2): 4 labelled attributes</p>
 <p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">3</p>
 <img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
@@ -116,34 +119,16 @@ body.static .slide,body.noanim .slide{transition:none}
 <img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:48px;top:32px;height:56px;width:auto;background:#F6F5F1;padding:8px 12px;border-radius:4px;box-sizing:content-box">
 </section>
 </div>
-<div class="slide" data-id="aeent">
-<section id="aeent" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
-<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">The classic model, measured · MNIST, d = 12</p>
-<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">A plain autoencoder’s latents are entangled</h2>
-<img src="assets/d72fba4802332c51074eddd70b86a212.png" alt="plain autoencoder latent covariance over MNIST: clear off-diagonal entries" style="position:absolute;left:128px;top:300px;width:540px;height:505px;object-fit:contain;background:#FFFFFF;border:1px solid #E2DED4;border-radius:4px">
-<p style="position:absolute;left:128px;top:816px;width:540px;font-size:24px;line-height:1.35;color:#4A5160">covariance of the 12 latents over all of MNIST</p>
-<img src="assets/48e1ec7471cec38691986557e064466f.png" alt="plain autoencoder latent marginal histograms: skewed" style="position:absolute;left:712px;top:290px;width:340px;height:584px;object-fit:contain;background:#FFFFFF;border:1px solid #E2DED4;border-radius:4px">
-<p style="position:absolute;left:712px;top:884px;width:340px;font-size:24px;color:#4A5160">marginal of each latent</p>
-<div data-build-in="fade 1" style="position:absolute;left:1112px;top:330px;width:680px;display:flex;flex-direction:column;gap:20px">
-<p style="font-family:'EB Garamond', Georgia, serif;font-size:120px;font-weight:600;line-height:1">LPS 0.54</p>
-<p style="font-size:30px;line-height:1.4">On average, the other 11 latents predict half of each latent’s variance.</p>
-<p style="font-size:28px;line-height:1.4;color:#4A5160">The off-diagonal entries are correlated latents; LPS also counts dependence a covariance cannot show.</p>
-</div>
-<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Paper, Figure 1(e): standard autoencoder on MNIST, 12 latents · LPS from the paper’s MNIST table</p>
-<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">6</p>
-<img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
-</section>
-</div>
 <div class="slide" data-id="vae">
 <section id="vae" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
 <p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">The community’s answer · VAE, <span style="text-transform:none">β</span>-VAE, FactorVAE, <span style="text-transform:none">β</span>-TCVAE</p>
 <h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">The VAE: marginal likelihood, trained through the negative ELBO</h2>
-<img src="assets/a05874cade1d65760437dfe183c88c6d.png" alt="Goal: marginal maximum likelihood, maximize the expected log p(x), where p(x) is the integral of q(x | z) p(z) over every code: intractable" style="position:absolute;left:128px;top:282px;width:1664px;height:600px;object-fit:contain">
-<img data-build-in="fade 1" src="assets/8a7aea39d6edac3175b069935f1be540.png" alt="So train on an upper bound of minus log p(x), the negative ELBO: an expected reconstruction term plus the KL between q(z | x) and N(0, I), which pulls each code toward the prior" style="position:absolute;left:128px;top:282px;width:1664px;height:600px;object-fit:contain">
-<img data-build-in="fade 2" src="assets/d951ac03427ca717fcc52b6fa43ecba7.png" alt="The same encoder and decoder as the autoencoder, but the encoder outputs mu(x) and sigma(x) and the code is a sample z = mu(x) + sigma(x) times epsilon, epsilon from N(0, I); reconstruction from a beta-VAE retrained on CelebA" style="position:absolute;left:128px;top:282px;width:1664px;height:600px;object-fit:contain">
-<img data-build-in="fade 3" src="assets/36b6e8eaedf918783cae62ebd970c473.png" alt="The hope: if every q(z | x) reaches N(0, I), so does the aggregate q(z), since the KL of the aggregate is at most the average pointwise KL (convexity)" style="position:absolute;left:128px;top:282px;width:1664px;height:600px;object-fit:contain">
+<img src="assets/5dffdad2d1530c87732c9cc708ae4d92.png" alt="Goal: marginal maximum likelihood, maximize the expected log p(x), where p(x) is the integral of p(x | z) p(z) over every code; intractable, an integral over every code through a neural-network decoder" style="position:absolute;left:128px;top:282px;width:1664px;height:600px;object-fit:contain">
+<img data-build-in="fade 1" src="assets/b3eaf5b35ccbe4c2341a6d5a3e4fcef0.png" alt="So learn an encoder q(z | x) for the unknown posterior p(z | x) and minimize the negative ELBO, an upper bound on minus log p(x): an expected reconstruction term plus the KL between q(z | x) and N(0, I), which pulls each code toward the prior" style="position:absolute;left:128px;top:282px;width:1664px;height:600px;object-fit:contain">
+<img data-build-in="fade 2" src="assets/6f78e0c187c7a2d580b471d4f7935b98.png" alt="The same encoder and decoder as the autoencoder, but the encoder outputs mu(x) and sigma(x) and the code is a sample z = mu(x) + sigma(x) times epsilon, epsilon from N(0, I); reconstruction from a beta-VAE retrained on CelebA" style="position:absolute;left:128px;top:282px;width:1664px;height:600px;object-fit:contain">
+<img data-build-in="fade 3" src="assets/2cf6f4b7961595866703435fdaec9f95.png" alt="The hope: if every q(z | x) reaches N(0, I), so does the aggregate q(z), since the KL of the aggregate is at most the average pointwise KL (convexity)" style="position:absolute;left:128px;top:282px;width:1664px;height:600px;object-fit:contain">
 <p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Kingma &amp; Welling 2014 (VAE) · Higgins et al. 2017 (β-VAE) · Kim &amp; Mnih 2018 (FactorVAE) · Chen et al. 2018 (β-TCVAE)</p>
-<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">7</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">6</p>
 <img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
 </section>
 </div>
@@ -153,7 +138,7 @@ body.static .slide,body.noanim .slide{transition:none}
 <h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">The per-input KL did not make the latents independent</h2>
 <div style="position:absolute;left:128px;top:290px;width:800px;display:flex;flex-direction:column;gap:12px;background:#FCFBF8;border:1px solid #E2DED4;padding:24px;border-radius:4px">
 <p style="font-size:30px;font-weight:700">Plain autoencoder</p>
-<p style="font-size:24px;color:#4A5160">no prior on the codes</p>
+<p style="font-size:24px;color:#4A5160">latent space unconstrained</p>
 <div style="display:flex;gap:16px;align-items:center">
 <img src="assets/d72fba4802332c51074eddd70b86a212.png" alt="plain autoencoder latent covariance over MNIST: clear off-diagonal entries" style="width:380px;height:350px;object-fit:contain">
 <img src="assets/48e1ec7471cec38691986557e064466f.png" alt="plain autoencoder latent marginal histograms: skewed" style="width:230px;height:396px;object-fit:contain">
@@ -162,15 +147,15 @@ body.static .slide,body.noanim .slide{transition:none}
 </div>
 <div data-build-in="fade 1" style="position:absolute;left:992px;top:290px;width:800px;display:flex;flex-direction:column;gap:12px;background:#FCFBF8;border:1px solid #E2DED4;padding:24px;border-radius:4px">
 <p style="font-size:30px;font-weight:700">β-VAE (β = 4)</p>
-<p style="font-size:24px;color:#4A5160">KL toward N(0, I) on each code, ×4</p>
+<p style="font-size:24px;color:#4A5160">point-wise KL toward N(0, I)</p>
 <div style="display:flex;gap:16px;align-items:center">
 <img src="assets/6e99b36c4f260c8ec685953019f6428c.png" alt="beta-VAE latent covariance over MNIST: most latents switched off, the rest correlated" style="width:380px;height:350px;object-fit:contain">
 <img src="assets/62131cacafc578fcb52ca568bd9291d5.png" alt="beta-VAE latent marginal histograms: not Gaussian" style="width:230px;height:396px;object-fit:contain">
 </div>
-<p style="font-size:24px;line-height:1.35">Most latents switched off, the rest still correlated: more entangled than no KL at all. <b>LPS 0.90</b></p>
+<p style="font-size:24px;line-height:1.35">Most latents switched off; the rest correlated. <b>LPS 0.90</b></p>
 </div>
-<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Paper, Fig. 1 (MNIST, d = 12) · left: latent covariance · right: latent marginals · LPS: paper’s table, lower is better</p>
-<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">8</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Paper, Fig. 2 (MNIST, d = 12) · left: latent covariance · right: latent marginals · LPS: paper’s table, lower is better</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">7</p>
 <img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
 </section>
 </div>
@@ -182,7 +167,7 @@ body.static .slide,body.noanim .slide{transition:none}
 <img data-build-in="fade 1" src="assets/d08f242819c0bc70086411dcd0bd5054.png" alt="So keep the deterministic autoencoder and regularize only the aggregate q(z)" style="position:absolute;left:128px;top:300px;width:1664px;height:590px;object-fit:contain">
 <img data-build-in="fade 2" src="assets/c3b29670b2dda3eff8d6f5382fcdafd7.png" alt="The simplest aggregate penalty: fit a Gaussian to each batch of codes and take its KL to the prior, added to the squared reconstruction loss; the batch mean and covariance make it closed form and cheap" style="position:absolute;left:128px;top:300px;width:1664px;height:590px;object-fit:contain">
 <p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Hoffman &amp; Johnson, “ELBO surgery”, NeurIPS 2016 workshop · batch KL: the paper’s analytic baseline (MMD replaced by this KL)</p>
-<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">9</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">8</p>
 <img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
 </section>
 </div>
@@ -192,7 +177,7 @@ body.static .slide,body.noanim .slide{transition:none}
 <h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">Decorrelated is not independent</h2>
 <div style="position:absolute;left:128px;top:290px;width:520px;display:flex;flex-direction:column;gap:12px;background:#FCFBF8;border:1px solid #E2DED4;padding:24px;border-radius:4px">
 <p style="font-size:30px;font-weight:700">Plain autoencoder</p>
-<p style="font-size:24px;color:#4A5160">no prior on the codes</p>
+<p style="font-size:24px;color:#4A5160">latent space unconstrained</p>
 <div style="display:flex;gap:16px;align-items:center">
 <img src="assets/d72fba4802332c51074eddd70b86a212.png" alt="plain autoencoder latent covariance over MNIST: clear off-diagonal entries" style="width:280px;height:258px;object-fit:contain">
 <img src="assets/48e1ec7471cec38691986557e064466f.png" alt="plain autoencoder latent marginal histograms: skewed" style="width:176px;height:303px;object-fit:contain">
@@ -201,7 +186,7 @@ body.static .slide,body.noanim .slide{transition:none}
 </div>
 <div style="position:absolute;left:700px;top:290px;width:520px;display:flex;flex-direction:column;gap:12px;background:#FCFBF8;border:1px solid #E2DED4;padding:24px;border-radius:4px">
 <p style="font-size:30px;font-weight:700">β-VAE (β = 4)</p>
-<p style="font-size:24px;color:#4A5160">KL toward N(0, I) on each code, ×4</p>
+<p style="font-size:24px;color:#4A5160">point-wise KL toward N(0, I)</p>
 <div style="display:flex;gap:16px;align-items:center">
 <img src="assets/6e99b36c4f260c8ec685953019f6428c.png" alt="beta-VAE latent covariance over MNIST: most latents switched off, the rest correlated" style="width:280px;height:258px;object-fit:contain">
 <img src="assets/62131cacafc578fcb52ca568bd9291d5.png" alt="beta-VAE latent marginal histograms: not Gaussian" style="width:176px;height:303px;object-fit:contain">
@@ -210,15 +195,15 @@ body.static .slide,body.noanim .slide{transition:none}
 </div>
 <div data-build-in="fade 1" style="position:absolute;left:1272px;top:290px;width:520px;display:flex;flex-direction:column;gap:12px;background:#FCFBF8;border:1px solid #E2DED4;padding:24px;border-radius:4px">
 <p style="font-size:30px;font-weight:700">AE + batch KL</p>
-<p style="font-size:24px;color:#4A5160">KL on the batch’s mean and covariance</p>
+<p style="font-size:24px;color:#4A5160">KL on batch mean and covariance</p>
 <div style="display:flex;gap:16px;align-items:center">
 <img src="assets/c5750522a7b636c3b3f8d0a1407d29e0.png" alt="autoencoder with batch-wise KL: latent covariance is diagonal" style="width:280px;height:258px;object-fit:contain">
 <img src="assets/852af244f3f8066b979dcae96565058a.png" alt="autoencoder with batch-wise KL: latent marginals are not Gaussian" style="width:176px;height:303px;object-fit:contain">
 </div>
-<p style="font-size:24px;line-height:1.35">Diagonal covariance, non-Gaussian marginals: only two moments matched. <b>LPS 0.97</b></p>
+<p style="font-size:24px;line-height:1.35">Diagonal, yet dependent. <b>LPS 0.97</b></p>
 </div>
-<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Paper, Fig. 1 (MNIST, d = 12) · left: latent covariance · right: latent marginals · LPS: paper’s table, lower is better</p>
-<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">10</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Paper, Fig. 2 (MNIST, d = 12) · left: latent covariance · right: latent marginals · LPS: paper’s table, lower is better</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">9</p>
 <img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
 </section>
 </div>
@@ -226,12 +211,11 @@ body.static .slide,body.noanim .slide{transition:none}
 <section id="wae" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
 <p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">A third estimator · optimal transport</p>
 <h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">Wasserstein autoencoders penalize only the aggregate</h2>
-<img src="assets/f37ffcb01b37810836664ac2116ab287.png" alt="Goal: the optimal-transport cost W_c between the data distribution and the model distribution, the infimum over couplings of the expected cost c(x, y); the model decodes prior samples, and c is a reconstruction cost" style="position:absolute;left:128px;top:290px;width:1664px;height:600px;object-fit:contain">
-<img data-build-in="fade 1" src="assets/919b98f312ddcf638b035b6f279d1b5d.png" alt="With a deterministic decoder, transport plans become encoders whose aggregate is the prior: W_c equals the infimum over encoders with q(z) = p(z) of the expected reconstruction cost" style="position:absolute;left:128px;top:290px;width:1664px;height:600px;object-fit:contain">
-<img data-build-in="fade 2" src="assets/b512e9514cfeb1c3109194966c262fd3.png" alt="Relax the constraint with a penalty D on the aggregate, for a deterministic encoder z = f(x) or a variational encoder z ~ q(z | x): reconstruction cost plus lambda times D(q(z), p(z))" style="position:absolute;left:128px;top:290px;width:1664px;height:600px;object-fit:contain">
-<img data-build-in="fade 3" src="assets/bd36b5f75dc8e3e78ff969b6bc97d859.png" alt="Unlike the VAE, the penalty sees only the aggregate q(z), never each q(z | x); D is an adversary (WAE-GAN) or the maximum mean discrepancy (WAE-MMD)" style="position:absolute;left:128px;top:290px;width:1664px;height:600px;object-fit:contain">
-<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Tolstikhin, Bousquet, Gelly &amp; Schölkopf, “Wasserstein Auto-Encoders”, ICLR 2018 · Theorem 1 and the WAE objective</p>
-<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">11</p>
+<img src="assets/cdd249d0d37243f9066bfa1a928b2ed5.png" alt="Notation: f or q(z | x) the encoder, g the decoder, p(z) the prior, q(z) the codes of all images. Optimal transport with image MSE: minimize over decoders the best reconstruction error among encoders whose codes follow the prior" style="position:absolute;left:128px;top:286px;width:1664px;height:610px;object-fit:contain">
+<img data-build-in="fade 1" src="assets/00dd665a150e33d084355c4c4f913da0.png" alt="Relax the constraint q(z) = p(z) into a penalty lambda D(q(z), p(z)): deterministic encoder z = f(x), minimize the image MSE between x and g(f(x)) plus the penalty; variational encoder z drawn from q(z | x), minimize the expected image MSE between x and g(z) plus the penalty" style="position:absolute;left:128px;top:286px;width:1664px;height:610px;object-fit:contain">
+<img data-build-in="fade 2" src="assets/8ab228b595e80e447a021a95c07b3b94.png" alt="Unlike the KL penalties so far, D is not an analytic formula of means and variances: it is a distance between two point clouds, a batch of codes and a batch of prior samples, so it targets the aggregate posterior itself; D = MMD gives WAE-MMD" style="position:absolute;left:128px;top:286px;width:1664px;height:610px;object-fit:contain">
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Tolstikhin, Bousquet, Gelly &amp; Schölkopf, “Wasserstein Auto-Encoders”, ICLR 2018 · Theorem 1, with squared-error cost</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">10</p>
 <img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
 </section>
 </div>
@@ -245,7 +229,30 @@ body.static .slide,body.noanim .slide{transition:none}
 <img data-build-in="fade 2" src="assets/fbe407bbb2d2d9502b06ec03d9a1448f.png" alt="The gap between the curves, shaded: MMD squared 0.021, against 0.003 between two batches of the prior itself" style="position:absolute;left:128px;top:340px;width:1664px;height:580px;object-fit:contain">
 <img data-build-in="fade 3" src="assets/d4f33cdd5c302eafa6dbd6d1f26f69c5.png" alt="Why it works: with the kernel e to the xy, each point becomes the infinite vector of its scaled powers, a batch average lists every moment and read at t gives the MGF; the codes match the prior in mean and variance (0, 1) but not in the third moment (-0.54 vs 0), which MMD sees; the Gaussian kernel holds the same moments damped by e to the minus z squared over 2 sigma squared, and MMD is zero only if q = p" style="position:absolute;left:128px;top:340px;width:1664px;height:580px;object-fit:contain">
 <p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">MMD: Gretton et al., JMLR 2012 · WAE-MMD: Tolstikhin et al., ICLR 2018 · codes: plain AE, MNIST, d = 12 (retrained)</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">11</p>
+<img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
+</section>
+</div>
+<div class="slide" data-id="method">
+<section id="method" data-transition="magic" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">Our method · SWAE-MMD</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">WAE-MMD, extended to a programmable prior</h2>
+<img src="assets/d0386613a6976ef0d3685d1ee0a71a61.png" alt="WAE-MMD loss: expected log-likelihood minus lambda times MMD squared between the aggregate q(z) and the prior p(z) = N(0, I), built to generate images" style="position:absolute;left:410px;top:288px;width:1100px;height:622px;object-fit:contain">
+<img id="mloss" data-build-in="fade 1" src="assets/9df4488b5836634c9fb17c6855821a5e.png" alt="Our loss: the MMD compares the joint of z and f_phi(u) with the prior joint; any prior we can sample gives independence and shaping, the pseudo-labels give alignment; with no labels and a Gaussian prior it is exactly WAE-MMD" style="position:absolute;left:410px;top:288px;width:1100px;height:622px;object-fit:contain">
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Tolstikhin, Bousquet, Gelly &amp; Schölkopf, “Wasserstein Auto-Encoders”, ICLR 2018 · our runs: batch 512, λ = 0.3, mixture of RBF kernels</p>
 <p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">12</p>
+<img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
+</section>
+</div>
+<div class="slide" data-id="method-pipe">
+<section id="method-pipe" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">Our method · SWAE-MMD</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">WAE-MMD, extended to a programmable prior</h2>
+<img id="mloss" src="assets/9df4488b5836634c9fb17c6855821a5e.png" alt="Our loss, now small on the left" style="position:absolute;left:128px;top:330px;width:540px;height:305px;object-fit:contain">
+<img src="assets/1a95e88dd3679ae11b14f95d8f462cc1.png" alt="Architecture from the paper: encoder and decoder with a reconstruction loss, plus an MMD loss between a batch of codes and a batch sampled from the target prior" style="position:absolute;left:700px;top:290px;width:1092px;height:468px;object-fit:contain;background:#FFFFFF;border:1px solid #E2DED4">
+<p style="position:absolute;left:700px;top:782px;width:1092px;font-size:28px;line-height:1.35;color:#1B1F2A">The MMD sees a whole batch of codes, so it shapes the aggregate.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Paper, Figure 1 (architecture) · our runs: batch 512, λ = 0.3, mixture of RBF kernels</p>
+<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">13</p>
 <img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
 </section>
 </div>
@@ -293,22 +300,9 @@ function loop(n){if(t0===null)t0=n;const t=((n-t0)/1000*SPEED)%L;x.setTransform(
 const mm=/t([\d.]+)/.exec(location.hash);if(mm){x.setTransform(k,0,0,k,ox,oy);draw(+mm[1])}else requestAnimationFrame(loop)})();
 &lt;/script&gt;"></iframe>
 <p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Two real runs: MNIST, 2 latents, public code, λ = 20 · the same 500 test images at logged steps</p>
-<p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">13</p>
-<img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
-<img class="freeze" src="assets/90b25c70ef9365e35069e18ee740c2d3.png" alt="Final frame of the second real run: the codes of 500 MNIST test images form the ring prior, MMD squared 0.007 after 9,360 training steps" style="position:absolute;left:128px;top:290px;width:1664px;height:620px;object-fit:contain">
-</section>
-</div>
-<div class="slide" data-id="method">
-<section id="method" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
-<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">Our method · SWAE-MMD</p>
-<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">WAE-MMD, extended to a programmable prior</h2>
-<img src="assets/d0386613a6976ef0d3685d1ee0a71a61.png" alt="WAE-MMD loss: expected log-likelihood minus lambda times MMD squared between the aggregate q(z) and the prior p(z) = N(0, I), built to generate images" style="position:absolute;left:128px;top:300px;width:680px;height:384px;object-fit:contain">
-<img data-build-in="fade 1" src="assets/9df4488b5836634c9fb17c6855821a5e.png" alt="Our loss: the MMD compares the joint of z and f_phi(u) with the prior joint; any prior we can sample gives independence and shaping, the pseudo-labels give alignment; with no labels and a Gaussian prior it is exactly WAE-MMD" style="position:absolute;left:128px;top:300px;width:680px;height:384px;object-fit:contain">
-<img data-build-in="fade 2" src="assets/1a95e88dd3679ae11b14f95d8f462cc1.png" alt="Architecture from the paper: encoder and decoder with a reconstruction loss, plus an MMD loss between a batch of codes and a batch sampled from the target prior" style="position:absolute;left:848px;top:290px;width:944px;height:470px;object-fit:contain;background:#FFFFFF;border:1px solid #E2DED4">
-<p data-build-in="fade 2" style="position:absolute;left:848px;top:784px;width:944px;font-size:28px;line-height:1.35;color:#1B1F2A">The MMD sees a whole batch of codes, so it shapes the aggregate.</p>
-<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Tolstikhin, Bousquet, Gelly & Schölkopf, “Wasserstein Auto-Encoders”, ICLR 2018 · our runs: batch 512, λ = 0.3, mixture of RBF kernels</p>
 <p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">14</p>
 <img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
+<img class="freeze" src="assets/90b25c70ef9365e35069e18ee740c2d3.png" alt="Final frame of the second real run: the codes of 500 MNIST test images form the ring prior, MMD squared 0.007 after 9,360 training steps" style="position:absolute;left:128px;top:290px;width:1664px;height:620px;object-fit:contain">
 </section>
 </div>
 <div class="slide" data-id="grid4">
@@ -340,7 +334,7 @@ const mm=/t([\d.]+)/.exec(location.hash);if(mm){x.setTransform(k,0,0,k,ox,oy);dr
 <p style="font-size:24px;color:#4A5160">diagonal, least dependent</p>
 </div>
 <p data-build-in="fade 2" style="position:absolute;left:128px;top:850px;width:1664px;font-size:28px;line-height:1.4;color:#1B1F2A">MMD compares every moment of the batch with the prior’s, not just the first two.</p>
-<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Paper, Figure 1: latent covariance over all of MNIST, d = 12 · LPS from the paper’s MNIST table, lower = more independent</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Paper, Figure 2: latent covariance over all of MNIST, d = 12 · LPS from the paper’s MNIST table, lower = more independent</p>
 <p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">15</p>
 <img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
 </section>
@@ -406,19 +400,9 @@ const mm=/t([\d.]+)/.exec(location.hash);if(mm){x.setTransform(k,0,0,k,ox,oy);dr
 <div class="slide" data-id="align">
 <section id="align" style="background:#F6F5F1;color:#1B1F2A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
 <p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#5B3FA8">Alignment results · dSprites</p>
-<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">A few pseudo-labels lock latents to real factors</h2>
-<img src="assets/601a017b2382dcd189b401f364f52139.png" alt="Target joint covariance of five latents and two pseudo-labels: identity blocks, with the labels copied onto latents 1 and 2" style="position:absolute;left:128px;top:276px;width:330px;height:304px;object-fit:contain;background:#FFFFFF;border:1px solid #E2DED4;border-radius:12px">
-<img src="assets/17138f465e4aab5f9c3639a51753a5da.png" alt="Learned joint covariance after training: it matches the target, the labels line up with latents 1 and 2" style="position:absolute;left:478px;top:276px;width:330px;height:304px;object-fit:contain;background:#FFFFFF;border:1px solid #E2DED4;border-radius:12px">
-<p style="position:absolute;left:128px;top:588px;width:330px;text-align:center;font-size:24px;color:#4A5160">target</p>
-<p style="position:absolute;left:478px;top:588px;width:330px;text-align:center;font-size:24px;color:#4A5160">learned</p>
-<p style="position:absolute;left:850px;top:300px;width:942px;font-size:30px;line-height:1.4;color:#1B1F2A">Learned matches target: the two labels sit on latents 1 and 2, and the latents stay independent.</p>
-<img data-build-in="fade 1" src="assets/57517cf36140291fe8292ecd7649134e.png" alt="DCI disentanglement against the number of pseudo-labels aligned, 1 to 5: it rises from about 0.2 to about 0.7" style="position:absolute;left:128px;top:636px;width:320px;height:250px;object-fit:contain">
-<p data-build-in="fade 1" style="position:absolute;left:128px;top:892px;width:320px;text-align:center;font-size:24px;color:#4A5160">DCI disentanglement ↑</p>
-<img data-build-in="fade 2" src="assets/90aff84edb66bdcedb4bff55173bcc4e.png" alt="LPS against the number of pseudo-labels aligned: it rises from about 0.1 to about 0.2" style="position:absolute;left:478px;top:636px;width:320px;height:250px;object-fit:contain">
-<p data-build-in="fade 2" style="position:absolute;left:478px;top:892px;width:320px;text-align:center;font-size:24px;color:#4A5160">LPS ↓</p>
-<img data-build-in="fade 2" src="assets/62b232aca7f2c1d9f8d703d9a07248e7.png" alt="Reconstruction NMSE against the number of pseudo-labels aligned: flat between about -14.5 and -16 dB for both priors" style="position:absolute;left:828px;top:636px;width:434px;height:250px;object-fit:contain">
-<p data-build-in="fade 2" style="position:absolute;left:828px;top:892px;width:434px;text-align:center;font-size:24px;color:#4A5160">reconstruction NMSE (dB) ↓</p>
-<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">x-axes: pseudo-labels aligned (of 5) · blue: Gaussian prior, orange: uniform prior · DCI always against all 5 factors</p>
+<h2 style="font-family:'EB Garamond', Georgia, serif;font-size:60px;font-weight:600;line-height:1.15;color:#1B1F2A">Pseudo-labels lock each latent to one factor</h2>
+<img src="assets/f2520ab9212737c9903854a0b70f5196.png" alt="A dSprites test image (a heart) and five rows of decoded traversals, one per aligned latent: z1 changes the shape (blob, heart, ellipse, square), z2 the scale, z3 the orientation, z4 the horizontal and z5 the vertical position; Spearman correlation of each latent with its own factor 0.91, 0.97, 0.51, 0.99 and 1.00, with any other factor at most 0.05" style="position:absolute;left:128px;top:280px;width:1664px;height:640px;object-fit:contain">
+<p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">dSprites test image · release alignment recipe, all 5 factors pseudo-labelled (d = 5), retrained for this talk</p>
 <p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">19</p>
 <img src="assets/512959ea23239b0e2b219df8b99c1ed0.png" alt="InterDigital, WNCG and 6G@UT logos" style="position:absolute;right:56px;top:40px;height:56px;width:auto">
 </section>
@@ -570,7 +554,7 @@ const mm=/t([\d.]+)/.exec(location.hash);if(mm){x.setTransform(k,0,0,k,ox,oy);dr
 <tr><td style="padding:4px 10px">standard AE</td><td style="text-align:right;padding:4px 10px">0.041</td><td style="text-align:right;padding:4px 10px">0.187</td><td style="text-align:right;padding:4px 10px">0.362</td><td style="text-align:right;padding:4px 10px">−0.028</td><td style="text-align:right;padding:4px 10px">0.085</td><td style="text-align:right;padding:4px 10px">0.042</td><td style="text-align:right;padding:4px 10px">0.068</td><td style="text-align:right;padding:4px 10px">0.265</td></tr>
 <tr><td style="padding:4px 10px">standard VAE</td><td style="text-align:right;padding:4px 10px"><b>0.225</b></td><td style="text-align:right;padding:4px 10px">0.100</td><td style="text-align:right;padding:4px 10px">0.102</td><td style="text-align:right;padding:4px 10px">−0.055</td><td style="text-align:right;padding:4px 10px">0.085</td><td style="text-align:right;padding:4px 10px">0.016</td><td style="text-align:right;padding:4px 10px">0.105</td><td style="text-align:right;padding:4px 10px">0.180</td></tr>
 </table>
-<p style="position:absolute;left:128px;top:740px;width:1664px;font-size:28px;line-height:1.4;color:#1B1F2A">Unsupervised, our Gaussian model is the most independent but not aligned (DCI 0.03 on dSprites). With pseudo-labels for 3–4 of the 5 factors its DCI reaches about 0.65–0.67 (slide 19).</p>
+<p style="position:absolute;left:128px;top:740px;width:1664px;font-size:28px;line-height:1.4;color:#1B1F2A">Unsupervised, our Gaussian model is the most independent but not aligned (DCI 0.03 on dSprites). With pseudo-labels for 3–4 of the 5 factors its DCI reaches about 0.65–0.67 (paper, alignment figure).</p>
 <p style="position:absolute;left:128px;top:836px;width:1664px;font-size:26px;line-height:1.4;color:#4A5160">DCI can reward dependent latents: DGAE has the best DCI on XY (0.52) with LPS 0.25.</p>
 <p style="position:absolute;left:128px;bottom:64px;width:1500px;font-size:24px;color:#6B7080">Paper appendix (synthetic datasets) · DCI: random-forest probe (Eastwood &amp; Williams 2018) · bold = best in column</p>
 <p style="position:absolute;right:128px;bottom:64px;width:120px;text-align:right;font-size:24px;color:#6B7080">B6</p>
@@ -611,11 +595,29 @@ function ui(){const sl=S[cur];count.textContent=(cur+1)+' / '+S.length;
  document.getElementById('pips').textContent=sl._n?'\u25CF'.repeat(step)+'\u25CB'.repeat(sl._n-step):'';
  document.getElementById('prev').disabled=cur<=0&&step<=0;document.getElementById('next').disabled=cur>=S.length-1&&step>=sl._n;
  pb.disabled=!(sl&&sl.dataset.freeze);pb.textContent=sl&&sl.classList.contains('frozen')?'Play':'Pause'}
+function magicPairs(A,B){const sec=A.querySelector('section');if(!sec||sec.dataset.transition!=='magic')return null;
+ const same=new Set([...sec.children].map(e=>e.outerHTML)),mv=[],nw=[];
+ [...B.querySelector('section').children].forEach(b=>{if(b.tagName==='ASIDE')return;
+  const a=b.id?sec.querySelector('[id="'+b.id+'"]'):null;
+  if(a)mv.push([a.getBoundingClientRect(),b]);else if(!same.has(b.outerHTML))nw.push(b)});
+ return mv.length?[mv,nw]:null}
+function magic(sl,mv,nw){const k=stage.getBoundingClientRect().width/1920;
+ nw.forEach(e=>e.classList.add('mgn'));sl.classList.add('mgh');
+ mv.forEach(([r,b])=>{const q=b.getBoundingClientRect();b.style.transition='none';b.style.transformOrigin='0 0';
+  b.style.transform='translate('+((r.left-q.left)/k)+'px,'+((r.top-q.top)/k)+'px) scale('+(r.width/q.width)+','+(r.height/q.height)+')'});
+ void sl.offsetWidth;sl.classList.add('mg');
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{sl.classList.remove('mgh');
+  mv.forEach(([r,b])=>{b.style.transition='transform .8s cubic-bezier(.45,0,.2,1)';b.style.transform=''});
+  setTimeout(()=>{sl.classList.remove('mg');nw.forEach(e=>e.classList.remove('mgn'));
+   mv.forEach(([r,b])=>{b.style.transition='';b.style.transformOrigin=''})},1000)}))}
 function go(n,fromHash,k){n=Math.max(0,Math.min(S.length-1,n));
+ const mg=(!fromHash&&!isStatic&&cur>=0&&n===cur+1)?magicPairs(S[cur],S[n]):null;
+ if(mg){S[cur].classList.add('nofade');S[n].classList.add('nofade')}
  if(n!==cur){if(cur>=0){S[cur].classList.remove('on');unload(S[cur])}
   cur=n;S[cur].classList.add('on');
   if(isStatic){if(S[cur].dataset.freeze)S[cur].classList.add('frozen');else load(S[cur])}else load(S[cur])}
  const sl=S[cur];sl.classList.add('notr');setStep(k==='last'?sl._n:(k||0));
+ if(mg){magic(sl,mg[0],mg[1]);requestAnimationFrame(()=>requestAnimationFrame(()=>S.forEach(x=>x.classList.remove('nofade'))))}
  requestAnimationFrame(()=>requestAnimationFrame(()=>sl.classList.remove('notr')));
  if(!fromHash)hash();ui()}
 function next(){if(step<S[cur]._n){setStep(step+1);hash();ui()}else if(cur<S.length-1)go(cur+1)}
